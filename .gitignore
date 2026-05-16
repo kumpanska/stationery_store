@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Environment variables
+.env
+
+# Django static files (згенеровані при collectstatic)
+staticfiles/
+
+# IDE / Editor settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Migrations
+*/migrations/__pycache__/
