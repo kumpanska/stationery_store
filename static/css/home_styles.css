@@ -1,0 +1,26 @@
+body {
+    font-family: Bahnschrift, sans-serif;
+    text-align: center;
+    margin-top: 200px;
+    background-color: #F6F6F6;
+}
+h1 {
+    font-size: 30px;
+    margin-bottom: 40px;
+    color: #223125;
+}
+.btn {
+    display: block;
+    width: 300px;
+    margin: 5px auto;
+    padding: 10px;
+    font-size: 20px;
+    background-color: #729969;
+    color: #F6F6F6;
+    border: none;
+    border-radius: 5px;
+}
+.btn:hover{
+    background-color: #223125;
+    color: #E6E7EB;
+}
