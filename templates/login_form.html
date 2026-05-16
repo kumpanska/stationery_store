@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Вхід {{ role }}</title>
+</head>
+<body>
+<h2>Вхід {{ role }}</h2>
+<form method="post">
+    {% csrf_token %}
+    <input type="text" name="username" placeholder="Логін"><br>
+    <input type="password" name="password" placeholder="Пароль"><br>
+    <button type="submit">Увійти</button>
+</form>
+</body>
+</html>
