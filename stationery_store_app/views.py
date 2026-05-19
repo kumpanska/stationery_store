@@ -19,3 +19,7 @@ def register(request, role):
     else:
         login_url = "seller_login"
     return render(request, 'register_form.html', {'role': role, 'login_url': login_url})
+def reset_password(request):
+    if request.method == "POST":
+        return redirect('home')
+    return render(request,'reset_password.html')
