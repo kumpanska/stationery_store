@@ -1,8 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Реєстрація {{ role }}</title>
+    <link rel="stylesheet" href="{% static 'css/register_styles.css' %}">
 </head>
 <body>
 <h2>Реєстрація {{ role }}</h2>
@@ -11,7 +13,7 @@
     <input type="text" name="username" placeholder="Логін"><br>
     <input type="password" name="password" placeholder="Пароль"><br>
     <input type="text" name="full_name" placeholder="ПІБ"><br>
-    <input type="number" name="store_id" placeholder="ID магазину"><br>
+    <input type="number" name="store_id" placeholder="ID магазину" min="1"><br>
     <button type="submit">Зареєструватись</button>
 </form>
 <p>Акаунт вже існує?

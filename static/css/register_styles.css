@@ -1,0 +1,61 @@
+body {
+    font-family: Bahnschrift, sans-serif;
+    text-align: center;
+    margin-top: 150px;
+    background-color: #F6F6F6;
+}
+
+h2 {
+    font-size: 26px;
+    margin-bottom: 30px;
+    color: #223125;
+}
+
+form {
+    display: inline-block;
+    background-color: #E6E7EB;
+    padding: 30px;
+    border-radius: 8px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"]{
+    width: 250px;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #729969;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #223125;
+    outline: none;
+}
+
+button {
+    width: 250px;
+    padding: 10px;
+    font-size: 18px;
+    background-color: #729969;
+    color: #F6F6F6;
+    border: none;
+    border-radius: 5px;
+    margin-top: 15px;
+}
+
+button:hover {
+    background-color: #223125;
+    color: #E6E7EB;
+    cursor: pointer;
+}
+p {
+    margin-top: 20px;
+    color: #223125;
+}
+a {
+    color: #729969;
+    font-weight: bold;
+}
