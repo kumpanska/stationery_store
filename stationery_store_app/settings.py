@@ -76,8 +76,12 @@ WSGI_APPLICATION = 'stationery_store_app.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'stationery_store',
+        'USER': 'postgres',
+        'PASSWORD': 'utena20',
+        'HOST':'localhost',
+        'PORT': '5342',
     }
 }
 
