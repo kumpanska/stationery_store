@@ -3,11 +3,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Реєстрація {{ role }}</title>
+    <title>Реєстрація {{ role_display }}</title>
     <link rel="stylesheet" href="{% static 'css/register_styles.css' %}">
 </head>
 <body>
-<h2>Реєстрація {{ role }}</h2>
+<h2>Реєстрація {{ role_display }}</h2>
 <form method = "post">
     {% csrf_token %}
     <input type="text" name="username" placeholder="Логін"><br>
@@ -17,7 +17,7 @@
     <button type="submit">Зареєструватись</button>
 </form>
 <p>Акаунт вже існує?
-    <a href="{% url login_url %}">Увійти як {{ role }}</a>
+   <a href="{% url 'login' role=role_latin %}">Увійти як {{ role_display }}</a>
 </p>
 <p>
     <a href="{% url 'home' %}">Повернутись на головну сторінку</a>

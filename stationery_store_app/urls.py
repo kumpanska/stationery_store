@@ -20,12 +20,12 @@ from . import views
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('login/director/', views.director_login, name='director_login'),
-    path('login/manager/', views.manager_login, name='manager_login'),
-    path('login/seller/', views.seller_login, name='seller_login'),
+    path('login/<str:role>/', views.login, name = 'login'),
     path('register/<str:role>/', views.register, name='register'),
     path('reset-password/', views.reset_password, name='reset_password'),
-    path('director/panel', views.director_panel, name = 'director_panel'),
+    path('director/panel/', views.director_panel, name = 'director_panel'),
+    path('manager/panel/', views.manager_panel, name = 'manager_panel'),
+    path('seller/panel/', views.seller_panel, name = 'seller_panel'),
 
     path('admin/', admin.site.urls),
 ]

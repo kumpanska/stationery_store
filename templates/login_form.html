@@ -3,11 +3,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Вхід {{ role }}</title>
+    <title>Вхід {{ role_display }}</title>
     <link rel="stylesheet" href="{% static 'css/login_styles.css' %}">
 </head>
 <body>
-<h2>Вхід {{ role }}</h2>
+<h2>Вхід {{ role_display }}</h2>
 <form method="post">
     {% csrf_token %}
      {% if error %}
@@ -19,7 +19,7 @@
     <p><a href="{% url 'reset_password' %}">Забули пароль?</a></p>
 </form>
 <p>Акаунт ще не створений?
-    <a href = "{% url 'register' role=role %}">Реєстрація</a>
+    <a href="{% url 'register' role=role_latin %}">Реєстрація</a>
 </p>
 <p>
     <a href="{% url 'home' %}">Повернутись на головну сторінку</a>

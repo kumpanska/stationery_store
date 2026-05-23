@@ -5,40 +5,48 @@ from .models import UserAuth
 def home(request):
     return render(request, 'home.html')
 
-def director_login(request):
+def login(request, role):
     error = None
+    redirect_urls = {
+        'director': 'director_panel',
+        'manager': 'manager_panel',
+        'seller': 'seller_panel',
+    }
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         try:
             user = UserAuth.objects.get(login=username)
-            print(f"Знайдено користувача: {user.login}")
-            print(f"Хеш з БД: {user.password_hash}")
-            result = bcrypt.checkpw(password.encode(), user.password_hash.encode())
-            print(f"Результат перевірки: {result}")
-            if result:
+            if bcrypt.checkpw(password.encode(), user.password_hash.encode()):
                 request.session['user_id'] = user.id
-                return redirect('director_panel')
+                return redirect(redirect_urls.get(role, 'home'))
             else:
                 error = 'Невірний логін або пароль'
         except UserAuth.DoesNotExist:
-            print(f"Користувача '{username}' не знайдено в БД")
             error = 'Невірний логін або пароль'
-    return render(request, 'login_form.html', {'role': 'Директор', 'error': error})
-def manager_login(request):
-    return render(request, 'login_form.html', {'role': 'Менеджер'})
 
-def seller_login(request):
-    return render(request, 'login_form.html', {'role': 'Продавець'})
+    roles_titles = {
+        'director': 'Директор',
+        'manager': 'Менеджер',
+        'seller': 'Продавець'
+    }
+    return render(request, 'login_form.html', {
+        'role_display': roles_titles.get(role, role),
+        'role_latin': role
+    })
 
 def register(request, role):
-    if role == "Директор":
-        login_url = "director_login"
-    elif role == "Менеджер":
-        login_url = "manager_login"
-    else:
-        login_url = "seller_login"
-    return render(request, 'register_form.html', {'role': role, 'login_url': login_url})
+    roles_titles = {
+        'director': 'Директор',
+        'manager': 'Менеджер',
+        'seller': 'Продавець'
+    }
+    display_role = roles_titles.get(role, role)
+    return render(request, 'register_form.html', {
+        'role_display': display_role,
+        'role_latin': role
+    })
 def reset_password(request):
     if request.method == "POST":
         return redirect('home')
@@ -46,3 +54,7 @@ def reset_password(request):
 
 def director_panel(request):
     return render(request, 'director_panel.html')
+def manager_panel(request):
+    return render(request, 'manager_panel.html')
+def seller_panel(request):
+    return render(request, 'seller_panel.html')
