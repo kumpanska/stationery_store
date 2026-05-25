@@ -17,3 +17,12 @@ class UserRegister(models.Model):
     class Meta:
         db_table = 'staff'
         managed = False
+
+class Store(models.Model):
+    id = models.AutoField(primary_key=True)
+    store_name = models.CharField(max_length=100)
+    address = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'store'
+        managed = False

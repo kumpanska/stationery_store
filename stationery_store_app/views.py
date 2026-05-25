@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 import bcrypt
-from .models import UserAuth, UserRegister
+from .models import UserAuth, UserRegister, Store
 
 def home(request):
     return render(request, 'home.html')
@@ -48,6 +48,14 @@ def register(request, role):
         password = request.POST.get('password')
         full_name = request.POST.get('full_name')
         store_id = username = request.POST.get('store_id')
+        try:
+            store = Store.obhects.get(id = store_id)
+        except Store.DoedNotExist:
+            return render(request, 'register_form.html', {
+                'role_display': display_role,
+                'role_latin': role,
+                'error': 'Магазин з таким ID не існує'
+            })
         hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
         user_register = UserRegister.objects.create(
             full_name = full_name,
