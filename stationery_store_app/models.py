@@ -8,3 +8,12 @@ class UserAuth(models.Model):
     class Meta:
         db_table = 'user_auth'
         managed = False
+
+class UserRegister(models.Model):
+    full_name = models.CharField(max_length=150)
+    staff_position = models.CharField(max_length=100)
+    store_id = models.IntegerField()
+
+    class Meta:
+        db_table = 'staff'
+        managed = False
