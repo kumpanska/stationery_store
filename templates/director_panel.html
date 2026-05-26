@@ -8,16 +8,21 @@
 </head>
 <body>
 <h1>Панель директора</h1>
+{% if success %}
+  <div class="alert alert-success" style="color:green;">
+      {{ success }}
+  </div>
+{% endif %}
 <div class = "side_bar">
     <button class="btn">Статистика продажів</button>
     <button class="btn">Звіт по магазину</button>
     <button class="btn">Продавці</button>
     <button class="btn">Менеджери</button>
-    <button class="btn">Постачальники</button>
 </div>
 <div class = "content">
     <h2>Виберіть опцію з бічної панелі</h2>
     <p>Тут буде відображатися інформація про продажі, графіки, звіти та постачальників.</p>
 </div>
+
 </body>
 </html>

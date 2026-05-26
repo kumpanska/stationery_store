@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.contrib import messages
 import bcrypt
 from django.db import connection
 
@@ -7,16 +8,12 @@ def home(request):
 
 def login(request, role):
     error = None
-    redirect_urls = {
-        'director': 'director_panel',
-        'manager': 'manager_panel',
-        'seller': 'seller_panel',
-    }
     roles_titles = {
         'director': 'Директор',
         'manager': 'Менеджер',
         'seller': 'Продавець'
     }
+
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -24,21 +21,32 @@ def login(request, role):
             error = "Заповніть усі поля"
         else:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT id, password_hash FROM user_auth WHERE login = %s", [username])
+                cursor.execute("""
+                    SELECT ua.id, ua.password_hash, s.store_id, st.store_name
+                    FROM user_auth ua
+                    JOIN staff s ON ua.staff_id = s.id
+                    JOIN store st ON s.store_id = st.id
+                    WHERE ua.login = %s
+                """, [username])
                 user = cursor.fetchone()
                 if user:
-                    user_id, password_hash = user
+                    user_id, password_hash, store_id, store_name = user
                     if bcrypt.checkpw(password.encode(), password_hash.encode()):
                         request.session['user_id'] = user_id
-                        return redirect(redirect_urls.get(role, 'home'))
+                        return render(request, f'{role}_panel.html', {
+                            'success': f'Магазин: {store_name}'
+                        })
                     else:
                         error = "Невірний логін або пароль"
                 else:
                     error = "Невірний логін або пароль"
+
     return render(request, 'login_form.html', {
         'role_display': roles_titles.get(role, role),
-        'role_latin': role, 'error': error
+        'role_latin': role,
+        'error': error
     })
+
 
 def register(request, role):
     roles_titles = {
@@ -53,7 +61,7 @@ def register(request, role):
         full_name = request.POST.get('full_name')
         store_id = request.POST.get('store_id')
         with connection.cursor() as cursor:
-            cursor.execute("SELECT id FROM store WHERE id = %s", [store_id])
+            cursor.execute("SELECT store_name FROM store WHERE id = %s", [store_id])
             store = cursor.fetchone()
             if not store:
                 return render(request, 'register_form.html', {
@@ -61,6 +69,7 @@ def register(request, role):
                     'role_latin': role,
                     'error': 'Магазин з таким ID не існує'
                 })
+            store_name = store[0]
             hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
             cursor.execute("""
                 INSERT INTO staff (full_name, staff_position, store_id)
@@ -71,7 +80,11 @@ def register(request, role):
                 INSERT INTO user_auth (login, password_hash, staff_id)
                 VALUES (%s, %s, %s)
             """, [username, hashed_pw, staff_id])
-        return redirect('login', role=role)
+        return render(request, 'register_form.html', {
+            'role_display': display_role,
+            'role_latin': role,
+            'success': f'Реєстрація успішна! Магазин: {store_name}'
+        })
     return render(request, 'register_form.html', {
         'role_display': display_role,
         'role_latin': role

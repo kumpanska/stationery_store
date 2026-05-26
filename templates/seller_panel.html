@@ -5,6 +5,15 @@
     <title>Title</title>
 </head>
 <body>
-
+<h1>Панель продавця</h1>
+{% if success %}
+  <div class="alert alert-success" style="color:green;">
+      {{ success }}
+  </div>
+{% endif %}
+<div class = "side_bar">
+    <button class="btn">Чеки</button>
+    <button class="btn">Історія продажів</button>
+</div>
 </body>
 </html>
