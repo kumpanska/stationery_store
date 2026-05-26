@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 import bcrypt
-from .models import UserAuth, UserRegister, Store
+from django.db import connection
 
 def home(request):
     return render(request, 'home.html')
@@ -12,25 +12,29 @@ def login(request, role):
         'manager': 'manager_panel',
         'seller': 'seller_panel',
     }
-
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        try:
-            user = UserAuth.objects.get(login=username)
-            if bcrypt.checkpw(password.encode(), user.password_hash.encode()):
-                request.session['user_id'] = user.id
-                return redirect(redirect_urls.get(role, 'home'))
-            else:
-                error = 'Невірний логін або пароль'
-        except UserAuth.DoesNotExist:
-            error = 'Невірний логін або пароль'
-
     roles_titles = {
         'director': 'Директор',
         'manager': 'Менеджер',
         'seller': 'Продавець'
     }
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        if not username or not password:
+            error = "Заповніть усі поля"
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT id, password_hash FROM user_auth WHERE login = %s", [username])
+                user = cursor.fetchone()
+                if user:
+                    user_id, password_hash = user
+                    if bcrypt.checkpw(password.encode(), password_hash.encode()):
+                        request.session['user_id'] = user_id
+                        return redirect(redirect_urls.get(role, 'home'))
+                    else:
+                        error = "Невірний логін або пароль"
+                else:
+                    error = "Невірний логін або пароль"
     return render(request, 'login_form.html', {
         'role_display': roles_titles.get(role, role),
         'role_latin': role, 'error': error
@@ -47,42 +51,46 @@ def register(request, role):
         username = request.POST.get('username')
         password = request.POST.get('password')
         full_name = request.POST.get('full_name')
-        store_id = username = request.POST.get('store_id')
-        try:
-            store = Store.obhects.get(id = store_id)
-        except Store.DoedNotExist:
-            return render(request, 'register_form.html', {
-                'role_display': display_role,
-                'role_latin': role,
-                'error': 'Магазин з таким ID не існує'
-            })
-        hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-        user_register = UserRegister.objects.create(
-            full_name = full_name,
-            staff_position = display_role,
-            store_id = store_id
-        )
-        UserAuth.objects.create(login = username,
-                                password_hash = hashed_pw,
-                                staff = user_register)
-        return redirect('login', role = role)
+        store_id = request.POST.get('store_id')
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id FROM store WHERE id = %s", [store_id])
+            store = cursor.fetchone()
+            if not store:
+                return render(request, 'register_form.html', {
+                    'role_display': display_role,
+                    'role_latin': role,
+                    'error': 'Магазин з таким ID не існує'
+                })
+            hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+            cursor.execute("""
+                INSERT INTO staff (full_name, staff_position, store_id)
+                VALUES (%s, %s, %s) RETURNING id
+            """, [full_name, display_role, store_id])
+            staff_id = cursor.fetchone()[0]
+            cursor.execute("""
+                INSERT INTO user_auth (login, password_hash, staff_id)
+                VALUES (%s, %s, %s)
+            """, [username, hashed_pw, staff_id])
+        return redirect('login', role=role)
     return render(request, 'register_form.html', {
         'role_display': display_role,
         'role_latin': role
     })
+
 def reset_password(request):
     if request.method == "POST":
         username = request.POST.get('username')
         new_password = request.POST.get('new_password')
-        try:
-            user = UserAuth.objects.get(login = username)
-            hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
-            user.password_hash = hashed_pw
-            user.save()
-            return redirect('home')
-        except UserAuth.DoesNotExist:
-            return render(request, 'reset_password.html', {'error':'Користувача не знайдено'})
-    return render(request,'reset_password.html')
+        if not username or not new_password:
+            return render(request, 'reset_password.html', {'error': 'Заповніть усі поля'})
+        hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+        with connection.cursor() as cursor:
+            cursor.execute("UPDATE user_auth SET password_hash = %s WHERE login = %s",
+                           [hashed_pw, username])
+            if cursor.rowcount == 0:
+                return render(request, 'reset_password.html', {'error': 'Користувача не знайдено'})
+        return render(request, 'reset_password.html', {'success': 'Пароль успішно змінено'})
+    return render(request, 'reset_password.html')
 
 def director_panel(request):
     return render(request, 'director_panel.html')

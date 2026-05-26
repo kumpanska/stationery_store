@@ -11,7 +11,10 @@
 <form method="post">
     {% csrf_token %}
      {% if error %}
-        <p style="color: red;">{{ error }}</p>
+    <p style="color:red;">{{ error }}</p>
+    {% endif %}
+    {% if success %}
+    <p style="color:green;">{{ success }}</p>
     {% endif %}
     <input type="text" name="username" placeholder="Логін"><br>
     <input type="password" name="password" placeholder="Пароль"><br>
