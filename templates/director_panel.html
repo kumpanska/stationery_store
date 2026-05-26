@@ -5,14 +5,15 @@
     <meta charset="UTF-8">
     <title>Панель директора</title>
     <link rel="stylesheet" href="{% static 'css/director_panel_styles.css' %}">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 </head>
 <body>
 <h1>Панель директора</h1>
 
 {% if success %}
-  <div class="alert alert-success" style="color:green; margin:20px;">
-      {{ success }}
-  </div>
+    <div class="alert alert-success" style="color:green; margin:20px;">
+        {{ success }}
+    </div>
 {% endif %}
 
 <div class="side_bar">
@@ -20,45 +21,63 @@
     <button class="btn" onclick="showSection('store_report')">Звіт по магазину</button>
     <button class="btn" onclick="showSection('sellers')">Продавці</button>
     <button class="btn" onclick="showSection('managers')">Менеджери</button>
+    <button class="btn" onclick="showSection('suppliers')">Постачальники</button>
 </div>
+
 <div class="content">
-    <h2>Виберіть опцію з бічної панелі</h2>
-    <p>Тут буде відображатися інформація про продажі, графіки, звіти та постачальників.</p>
     <div id="sales_stats" style="display:none;">
         <h3>Статистика продажів</h3>
         <form method="post">
             {% csrf_token %}
-            <label for="period">Період:</label>
-            <input type="date" name="start_date"> -
+            <input type="hidden" name="form_type" value="sales_stats">
+            <label for="start_date">Період:</label>
+            <input type="date" name="start_date" id="start_date"> -
             <input type="date" name="end_date">
             <button type="submit">Показати</button>
         </form>
-        <div id="chart">
-            <p>Тут буде графік продажів за вибраний період.</p>
-        </div>
-        <label for="seller">Вибрати продавця:</label>
-        <select id="seller" name="seller_id">
-            {% for s in sellers %}
-                <option value="{{ s.id }}">{{ s.full_name }}</option>
-            {% endfor %}
-        </select>
+
+        {% if chart_html %}
+            <div style="margin-top:20px;">
+                {{ chart_html|safe }}
+            </div>
+        {% elif form_submitted %}
+            <p style="color:gray; margin-top:20px;">За вибраний період немає даних.</p>
+        {% endif %}
     </div>
     <div id="store_report" style="display:none;">
         <h3>Звіт по магазину</h3>
-        <p>Тут буде інформація про магазин: назва, адреса, кількість продажів, найпопулярніші товари.</p>
+        {% if store_info %}
+            <p>Назва: {{ store_info.0 }}</p>
+            <p>Адреса: {{ store_info.1 }}</p>
+        {% endif %}
+        <h4>Топ найпопулярніших товарів:</h4>
+        <ul>
+            {% for t in top_products %}
+                <li>{{ t.name }} — {{ t.sold }} шт.</li>
+            {% endfor %}
+        </ul>
     </div>
     <div id="sellers" style="display:none;">
         <h3>Продавці магазину</h3>
-        <p>Список продавців із можливістю перегляду їх статистики.</p>
+        <ul>
+            {% for s in sellers %}
+                <li>{{ s.full_name }}</li>
+            {% endfor %}
+        </ul>
     </div>
     <div id="managers" style="display:none;">
         <h3>Менеджери магазину</h3>
-        <p>Список менеджерів цього магазину.</p>
+        <ul>
+            {% for m in managers %}
+                <li>{{ m.full_name }}</li>
+            {% endfor %}
+        </ul>
     </div>
     <div id="suppliers" style="display:none;">
         <h3>Постачальники</h3>
         <form method="post">
             {% csrf_token %}
+            <input type="hidden" name="form_type" value="add_supplier">
             <label for="company_name">Назва компанії:</label>
             <input type="text" name="company_name" required>
             <label for="contact_full_name">Контактна особа:</label>
@@ -69,13 +88,31 @@
             <input type="email" name="email" required>
             <button type="submit">Додати постачальника</button>
         </form>
+        <h4>Список постачальників:</h4>
+        <ul>
+            {% for sup in suppliers %}
+                <li>{{ sup.company_name }} — {{ sup.contact_full_name }} ({{ sup.phone }}, {{ sup.email }})</li>
+            {% endfor %}
+        </ul>
     </div>
+
 </div>
+
 <script>
-function showSection(sectionId) {
-    document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
-    document.getElementById(sectionId).style.display = 'block';
-}
+    function showSection(sectionId) {
+        document.querySelectorAll('.content > div').forEach(function (div) {
+            div.style.display = 'none';
+        });
+        document.getElementById(sectionId).style.display = 'block';
+    }
+
+    {% if form_submitted %}
+        showSection('sales_stats');
+    {% endif %}
+
+    {% if success %}
+        showSection('suppliers');
+    {% endif %}
 </script>
 </body>
 </html>
