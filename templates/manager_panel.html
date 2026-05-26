@@ -1,19 +1,67 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Панель менеджера</title>
+    <link rel="stylesheet" href="{% static 'css/manager_panel_styles.css' %}">
 </head>
 <body>
 <h1>Панель менеджера</h1>
+
 {% if success %}
-  <div class="alert alert-success" style="color:green;">
+  <div class="alert alert-success" style="color:green; margin:20px;">
       {{ success }}
   </div>
 {% endif %}
-<div class = "side_bar">
-    <button class="btn">Постачальники</button>
-    <button class="btn">Склад</button>
+
+<div class="side_bar">
+    <button class="btn" onclick="showSection('suppliers')">Постачальники</button>
+    <button class="btn" onclick="showSection('warehouse')">Склад</button>
+    <button class="btn" onclick="showSection('staff')">Працівники</button>
 </div>
+
+<div class="content">
+    <h2>Управління магазином</h2>
+    <p>Тут менеджер може додавати, редагувати та видаляти товари на складі, а також переглядати працівників магазину.</p>
+    <div id="suppliers" style="display:none;">
+        <h3>Постачальники</h3>
+        <form method="post">
+            {% csrf_token %}
+            <label for="company_name">Назва компанії:</label>
+            <input type="text" name="company_name" required>
+            <label for="contact_full_name">Контактна особа:</label>
+            <input type="text" name="contact_full_name" required>
+            <label for="phone">Телефон:</label>
+            <input type="text" name="phone" required>
+            <label for="email">Email:</label>
+            <input type="email" name="email" required>
+            <button type="submit">Додати постачальника</button>
+        </form>
+        <div>
+            <h4>Список постачальників</h4>
+            <ul>
+                {% for sup in suppliers %}
+                    <li>{{ sup.company_name }} — {{ sup.contact_full_name }} ({{ sup.phone }}, {{ sup.email }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div id="warehouse" style="display:none;">
+        <h3>Склад</h3>
+        <p>Тут буде форма для додавання/редагування товарів.</p>
+    </div>
+    <div id="staff" style="display:none;">
+        <h3>Працівники</h3>
+        <p>Список працівників магазину з можливістю видалення.</p>
+    </div>
+</div>
+
+<script>
+function showSection(sectionId) {
+    document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
+    document.getElementById(sectionId).style.display = 'block';
+}
+</script>
 </body>
 </html>

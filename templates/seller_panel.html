@@ -1,19 +1,51 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Панель продавця</title>
+    <link rel="stylesheet" href="{% static 'css/seller_panel_styles.css' %}">
 </head>
 <body>
 <h1>Панель продавця</h1>
+
 {% if success %}
-  <div class="alert alert-success" style="color:green;">
+  <div class="alert alert-success" style="color:green; margin:20px;">
       {{ success }}
   </div>
 {% endif %}
-<div class = "side_bar">
-    <button class="btn">Чеки</button>
+
+<div class="side_bar">
+    <button class="btn" onclick="document.getElementById('receiptForm').style.display='block'">
+        Формування чеку
+    </button>
     <button class="btn">Історія продажів</button>
+</div>
+
+<div class="content">
+    <h2>Формування чеку</h2>
+    <p>Додайте позиції продажу та збережіть чек у системі.</p>
+    <form id="receiptForm" method="post" style="display:none;">
+        {% csrf_token %}
+        <label for="product">Товар:</label>
+        <select id="product" name="product_id">
+            {% for p in products %}
+                <option value="{{ p.id }}">{{ p.product_name }} ({{ p.barcode }})</option>
+            {% endfor %}
+        </select>
+        <label for="quantity">Кількість:</label>
+        <input type="number" id="quantity" name="quantity" min="1" value="1">
+        <label for="sale_price">Ціна продажу:</label>
+        <input type="number" id="sale_price" name="sale_price" step="0.01">
+        <label for="discount">Знижка:</label>
+        <input type="number" id="discount" name="discount" step="0.01" value="0">
+        <label for="payment_method">Спосіб оплати:</label>
+        <select id="payment_method" name="payment_method">
+            <option value="Готівка">Готівка</option>
+            <option value="Картка">Картка</option>
+        </select>
+        <button type="submit">Зберегти чек</button>
+    </form>
 </div>
 </body>
 </html>

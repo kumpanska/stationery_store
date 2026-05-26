@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <title>Панель директора</title>
@@ -8,21 +8,74 @@
 </head>
 <body>
 <h1>Панель директора</h1>
+
 {% if success %}
-  <div class="alert alert-success" style="color:green;">
+  <div class="alert alert-success" style="color:green; margin:20px;">
       {{ success }}
   </div>
 {% endif %}
-<div class = "side_bar">
-    <button class="btn">Статистика продажів</button>
-    <button class="btn">Звіт по магазину</button>
-    <button class="btn">Продавці</button>
-    <button class="btn">Менеджери</button>
+
+<div class="side_bar">
+    <button class="btn" onclick="showSection('sales_stats')">Статистика продажів</button>
+    <button class="btn" onclick="showSection('store_report')">Звіт по магазину</button>
+    <button class="btn" onclick="showSection('sellers')">Продавці</button>
+    <button class="btn" onclick="showSection('managers')">Менеджери</button>
 </div>
-<div class = "content">
+<div class="content">
     <h2>Виберіть опцію з бічної панелі</h2>
     <p>Тут буде відображатися інформація про продажі, графіки, звіти та постачальників.</p>
+    <div id="sales_stats" style="display:none;">
+        <h3>Статистика продажів</h3>
+        <form method="post">
+            {% csrf_token %}
+            <label for="period">Період:</label>
+            <input type="date" name="start_date"> -
+            <input type="date" name="end_date">
+            <button type="submit">Показати</button>
+        </form>
+        <div id="chart">
+            <p>Тут буде графік продажів за вибраний період.</p>
+        </div>
+        <label for="seller">Вибрати продавця:</label>
+        <select id="seller" name="seller_id">
+            {% for s in sellers %}
+                <option value="{{ s.id }}">{{ s.full_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div id="store_report" style="display:none;">
+        <h3>Звіт по магазину</h3>
+        <p>Тут буде інформація про магазин: назва, адреса, кількість продажів, найпопулярніші товари.</p>
+    </div>
+    <div id="sellers" style="display:none;">
+        <h3>Продавці магазину</h3>
+        <p>Список продавців із можливістю перегляду їх статистики.</p>
+    </div>
+    <div id="managers" style="display:none;">
+        <h3>Менеджери магазину</h3>
+        <p>Список менеджерів цього магазину.</p>
+    </div>
+    <div id="suppliers" style="display:none;">
+        <h3>Постачальники</h3>
+        <form method="post">
+            {% csrf_token %}
+            <label for="company_name">Назва компанії:</label>
+            <input type="text" name="company_name" required>
+            <label for="contact_full_name">Контактна особа:</label>
+            <input type="text" name="contact_full_name" required>
+            <label for="phone">Телефон:</label>
+            <input type="text" name="phone" required>
+            <label for="email">Email:</label>
+            <input type="email" name="email" required>
+            <button type="submit">Додати постачальника</button>
+        </form>
+    </div>
 </div>
-
+<script>
+function showSection(sectionId) {
+    document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
+    document.getElementById(sectionId).style.display = 'block';
+}
+</script>
 </body>
 </html>
