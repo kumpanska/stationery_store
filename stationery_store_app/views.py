@@ -1,9 +1,13 @@
 import bcrypt
 import plotly.graph_objects as go
+from collections import defaultdict
 from django.db import connection
 from django.shortcuts import render, redirect
+
+
 def home(request):
     return render(request, 'home.html')
+
 
 def login(request, role):
     error = None
@@ -20,12 +24,12 @@ def login(request, role):
         else:
             with connection.cursor() as cursor:
                 cursor.execute("""
-                               SELECT ua.id, ua.password_hash, s.store_id, st.store_name
-                               FROM user_auth ua
-                                        JOIN staff s ON ua.staff_id = s.id
-                                        JOIN store st ON s.store_id = st.id
-                               WHERE ua.login = %s
-                               """, [username])
+                    SELECT ua.id, ua.password_hash, s.store_id, st.store_name
+                    FROM user_auth ua
+                    JOIN staff s ON ua.staff_id = s.id
+                    JOIN store st ON s.store_id = st.id
+                    WHERE ua.login = %s
+                """, [username])
                 user = cursor.fetchone()
                 if user:
                     user_id, password_hash, store_id, store_name = user
@@ -67,14 +71,14 @@ def register(request, role):
             store_name = store[0]
             hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
             cursor.execute("""
-                           INSERT INTO staff (full_name, staff_position, store_id)
-                           VALUES (%s, %s, %s) RETURNING id
-                           """, [full_name, display_role, store_id])
+                INSERT INTO staff (full_name, staff_position, store_id)
+                VALUES (%s, %s, %s) RETURNING id
+            """, [full_name, display_role, store_id])
             staff_id = cursor.fetchone()[0]
             cursor.execute("""
-                           INSERT INTO user_auth (login, password_hash, staff_id)
-                           VALUES (%s, %s, %s)
-                           """, [username, hashed_pw, staff_id])
+                INSERT INTO user_auth (login, password_hash, staff_id)
+                VALUES (%s, %s, %s)
+            """, [username, hashed_pw, staff_id])
         return render(request, 'register_form.html', {
             'role_display': display_role,
             'role_latin': role,
@@ -101,54 +105,40 @@ def reset_password(request):
     return render(request, 'reset_password.html')
 
 def build_sales_chart(sales_data):
-    from collections import defaultdict
-    by_date = defaultdict(lambda: {'amount': 0.0, 'sellers': []})
+    by_date = defaultdict(lambda: {'amount': 0.0, 'sellers': set(), 'payments': set()})
     for row in sales_data:
         d = row['date']
         by_date[d]['amount'] += row['amount']
-        seller = row['seller']
-        if seller not in by_date[d]['sellers']:
-            by_date[d]['sellers'].append(seller)
+        by_date[d]['sellers'].add(row['seller'])
+        by_date[d]['payments'].add(row['payment_method'])
 
     dates = sorted(by_date.keys())
     amounts = [by_date[d]['amount'] for d in dates]
-    seller_labels = [', '.join(by_date[d]['sellers']) for d in dates]
     hover_texts = [
-        f"<b>{d}</b><br>Сума: {by_date[d]['amount']:,.0f} грн<br>Продавці: {', '.join(by_date[d]['sellers'])}"
+        f"<b>{d}</b><br>Сума: {by_date[d]['amount']:,.0f} грн"
+        f"<br>Продавці: {', '.join(by_date[d]['sellers'])}"
+        f"<br>Спосіб оплати: {', '.join(by_date[d]['payments'])}"
         for d in dates
     ]
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=dates,
-        y=amounts,
+        x=dates, y=amounts,
         mode='lines+markers+text',
         name='Загальні продажі',
         line=dict(color='#4a7c59', width=3),
         marker=dict(size=9, color='#4a7c59', symbol='circle'),
         fill='tozeroy',
         fillcolor='rgba(74, 124, 89, 0.12)',
-        text=[f"{a:,.0f} грн<br><span style='font-size:10px;color:#666'>{s}</span>"
-              for a, s in zip(amounts, seller_labels)],
+        text=[f"{a:,.0f} грн" for a in amounts],
         textposition='top center',
         hovertext=hover_texts,
         hoverinfo='text',
     ))
     fig.update_layout(
         title=dict(text='Загальні продажі магазину за період', font=dict(size=17), x=0.5),
-        xaxis=dict(
-            title='Дата',
-            tickformat='%d.%m',
-            showgrid=True,
-            gridcolor='#eeeeee',
-        ),
-        yaxis=dict(
-            title='Сума (грн)',
-            showgrid=True,
-            gridcolor='#eeeeee',
-            tickformat=',.0f',
-        ),
-        plot_bgcolor='white',
-        paper_bgcolor='white',
+        xaxis=dict(title='Дата', tickformat='%d.%m', showgrid=True, gridcolor='#eeeeee'),
+        yaxis=dict(title='Сума (грн)', showgrid=True, gridcolor='#eeeeee', tickformat=',.0f'),
+        plot_bgcolor='white', paper_bgcolor='white',
         hovermode='x unified',
         margin=dict(l=60, r=30, t=70, b=60),
         height=430,
@@ -166,9 +156,177 @@ def director_panel(request):
     suppliers = []
     sales_data = []
     top_products = []
+    seller_stats = []      
     success = None
+    error = None
     form_submitted = False
     chart_html = None
+    selected_seller_id = None
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT s.store_id FROM staff s
+            JOIN user_auth ua ON ua.staff_id = s.id
+            WHERE ua.id = %s
+        """, [user_auth_id])
+        row = cursor.fetchone()
+        if not row:
+            return redirect('/login/director/')
+        store_id = row[0]
+
+        cursor.execute("SELECT store_name, address FROM store WHERE id = %s", [store_id])
+        store_info = cursor.fetchone()
+        cursor.execute("""
+            SELECT id, full_name FROM staff
+            WHERE store_id = %s AND staff_position = 'Продавець'
+        """, [store_id])
+        sellers = [{'id': r[0], 'full_name': r[1]} for r in cursor.fetchall()]
+        cursor.execute("""
+            SELECT id, full_name FROM staff
+            WHERE store_id = %s AND staff_position = 'Менеджер'
+        """, [store_id])
+        managers = [{'id': r[0], 'full_name': r[1]} for r in cursor.fetchall()]
+        cursor.execute("""
+            SELECT sup.id, sup.company_name, sup.contact_full_name, sup.phone, sup.email
+            FROM supplier sup
+            JOIN store_supplier ss ON ss.supplier_id = sup.id
+            WHERE ss.store_id = %s
+            ORDER BY sup.company_name
+        """, [store_id])
+        suppliers = [
+            {'id': r[0], 'company_name': r[1], 'contact_full_name': r[2], 'phone': r[3], 'email': r[4]}
+            for r in cursor.fetchall()
+        ]
+        cursor.execute("""
+            SELECT id, company_name FROM supplier
+            ORDER BY company_name
+        """)
+        all_suppliers = [{'id': r[0], 'company_name': r[1]} for r in cursor.fetchall()]
+        cursor.execute("""
+            SELECT p.product_name, SUM(sp.quantity) AS total_sold
+            FROM sale_position sp
+            JOIN product p ON sp.product_id = p.id
+            JOIN receipt r ON sp.receipt_id = r.id
+            WHERE r.store_id = %s
+            GROUP BY p.product_name
+            ORDER BY total_sold DESC
+            LIMIT 5
+        """, [store_id])
+        top_products = [{'name': r[0], 'sold': r[1]} for r in cursor.fetchall()]
+        if request.method == 'POST':
+            form_type = request.POST.get('form_type')
+            if form_type == 'sales_stats':
+                form_submitted = True
+                start_date = request.POST.get('start_date')
+                end_date = request.POST.get('end_date')
+                selected_seller_id = request.POST.get('seller_id') or None
+                if start_date and end_date:
+                    if selected_seller_id:
+                        cursor.execute("""
+                            SELECT r.date, SUM(r.total_amount), s.full_name, r.payment_method
+                            FROM receipt r
+                            JOIN staff s ON r.staff_id = s.id
+                            WHERE r.store_id = %s AND r.date BETWEEN %s AND %s
+                              AND r.staff_id = %s
+                            GROUP BY r.date, s.full_name, r.payment_method
+                            ORDER BY r.date
+                        """, [store_id, start_date, end_date, selected_seller_id])
+                    else:
+                        cursor.execute("""
+                            SELECT r.date, SUM(r.total_amount), s.full_name, r.payment_method
+                            FROM receipt r
+                            JOIN staff s ON r.staff_id = s.id
+                            WHERE r.store_id = %s AND r.date BETWEEN %s AND %s
+                            GROUP BY r.date, s.full_name, r.payment_method
+                            ORDER BY r.date
+                        """, [store_id, start_date, end_date])
+                    rows = cursor.fetchall()
+                    sales_data = [
+                        {'date': str(r[0]), 'amount': float(r[1]),
+                         'seller': r[2], 'payment_method': r[3]}
+                        for r in rows
+                    ]
+                    if sales_data:
+                        chart_html = build_sales_chart(sales_data)
+                    cursor.execute("""
+                        SELECT s.full_name,
+                               COUNT(r.id)            AS receipts_count,
+                               SUM(r.total_amount)    AS total
+                        FROM receipt r
+                        JOIN staff s ON r.staff_id = s.id
+                        WHERE r.store_id = %s AND r.date BETWEEN %s AND %s
+                        GROUP BY s.full_name
+                        ORDER BY total DESC
+                    """, [store_id, start_date, end_date])
+                    seller_stats = [
+                        {'name': r[0], 'receipts': r[1], 'total': float(r[2])}
+                        for r in cursor.fetchall()
+                    ]
+            elif form_type == 'add_supplier':
+                supplier_id_to_add = request.POST.get('existing_supplier_id', '').strip()
+                if supplier_id_to_add:
+                    cursor.execute("""
+                        SELECT 1 FROM store_supplier
+                        WHERE store_id = %s AND supplier_id = %s
+                    """, [store_id, supplier_id_to_add])
+                    already_linked = cursor.fetchone()
+                    if already_linked:
+                        error = 'Цей постачальник вже прив\'язаний до магазину.'
+                    else:
+                        cursor.execute("""
+                            INSERT INTO store_supplier (store_id, supplier_id)
+                            VALUES (%s, %s)
+                        """, [store_id, supplier_id_to_add])
+                        cursor.execute(
+                            "SELECT company_name FROM supplier WHERE id = %s",
+                            [supplier_id_to_add]
+                        )
+                        name = cursor.fetchone()[0]
+                        success = f'Постачальника "{name}" успішно прив\'язано до магазину!'
+                        cursor.execute("""
+                            SELECT sup.id, sup.company_name, sup.contact_full_name, sup.phone, sup.email
+                            FROM supplier sup
+                            JOIN store_supplier ss ON ss.supplier_id = sup.id
+                            WHERE ss.store_id = %s
+                            ORDER BY sup.company_name
+                        """, [store_id])
+                        suppliers = [
+                            {'id': r[0], 'company_name': r[1], 'contact_full_name': r[2],
+                             'phone': r[3], 'email': r[4]}
+                            for r in cursor.fetchall()
+                        ]
+                else:
+                    error = 'Оберіть постачальника зі списку.'
+
+    return render(request, 'director_panel.html', {
+        'store_info': store_info,
+        'sellers': sellers,
+        'managers': managers,
+        'suppliers': suppliers,
+        'sales_data': sales_data,
+        'seller_stats': seller_stats,
+        'top_products': top_products,
+        'success': success,
+        'error': error,
+        'form_submitted': form_submitted,
+        'chart_html': chart_html,
+        'selected_seller_id': selected_seller_id,
+        'all_suppliers': all_suppliers,
+    })
+
+
+def manager_panel(request):
+    user_auth_id = request.session.get('user_id')
+    if not user_auth_id:
+        return redirect('/login/manager/')
+
+    store_id = None
+    store_info = None
+    products = []
+    staff_list = []
+    categories = []
+    suppliers = []
+    success = None
+    error = None
 
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -179,99 +337,138 @@ def director_panel(request):
                        """, [user_auth_id])
         row = cursor.fetchone()
         if not row:
-            return redirect('/login/director/')
+            return redirect('/login/manager/')
         store_id = row[0]
-
         cursor.execute("SELECT store_name, address FROM store WHERE id = %s", [store_id])
         store_info = cursor.fetchone()
-        cursor.execute(
-            "SELECT id, full_name FROM staff WHERE store_id = %s AND staff_position = 'Продавець'",
-            [store_id]
-        )
-        sellers = [{'id': r[0], 'full_name': r[1]} for r in cursor.fetchall()]
-        cursor.execute(
-            "SELECT id, full_name FROM staff WHERE store_id = %s AND staff_position = 'Менеджер'",
-            [store_id]
-        )
-        managers = [{'id': r[0], 'full_name': r[1]} for r in cursor.fetchall()]
-        cursor.execute(
-            "SELECT id, company_name, contact_full_name, phone, email FROM supplier"
-        )
-        suppliers = [
-            {'id': r[0], 'company_name': r[1], 'contact_full_name': r[2], 'phone': r[3], 'email': r[4]}
-            for r in cursor.fetchall()
-        ]
+        cursor.execute("SELECT id, category_name FROM products_category ORDER BY category_name")
+        categories = [{'id': r[0], 'name': r[1]} for r in cursor.fetchall()]
+        cursor.execute("""
+                       SELECT s.id, s.company_name
+                       FROM supplier s
+                                JOIN store_supplier ss ON ss.supplier_id = s.id
+                       WHERE ss.store_id = %s
+                       ORDER BY s.company_name
+                       """, [store_id])
+        suppliers = [{'id': r[0], 'name': r[1]} for r in cursor.fetchall()]
+        def get_filtered_products():
+            cursor.execute("""
+                           SELECT p.id,
+                                  p.product_name,
+                                  p.sale_price,
+                                  p.purchase_price,
+                                  p.quantity,
+                                  p.barcode,
+                                  pc.category_name,
+                                  sup.company_name
+                           FROM product p
+                                    JOIN products_category pc ON p.category_id = pc.id
+                                    JOIN supplier sup ON p.supplier_id = sup.id
+                                    JOIN store_supplier ss ON ss.supplier_id = sup.id
+                           WHERE ss.store_id = %s
+                           ORDER BY pc.category_name, p.product_name
+                           """, [store_id])
+            return [
+                {
+                    'id': r[0], 'name': r[1], 'sale_price': float(r[2]),
+                    'purchase_price': float(r[3]), 'quantity': r[4],
+                    'barcode': r[5], 'category': r[6], 'supplier': r[7],
+                    'low_stock': r[4] <= 5
+                }
+                for r in cursor.fetchall()
+            ]
+
+        def get_staff_list():
+            cursor.execute("""
+                           SELECT id, full_name, staff_position
+                           FROM staff
+                           WHERE store_id = %s
+                             AND staff_position IN ('Продавець', 'Менеджер')
+                           ORDER BY staff_position, full_name
+                           """, [store_id])
+            return [{'id': r[0], 'full_name': r[1], 'position': r[2]} for r in cursor.fetchall()]
+        products = get_filtered_products()
+        staff_list = get_staff_list()
 
         if request.method == 'POST':
             form_type = request.POST.get('form_type')
 
-            if form_type == 'sales_stats':
-                form_submitted = True
-                start_date = request.POST.get('start_date')
-                end_date = request.POST.get('end_date')
-                if start_date and end_date:
+            if form_type == 'add_product':
+                name = request.POST.get('product_name', '').strip()
+                sale_price = request.POST.get('sale_price')
+                purchase_price = request.POST.get('purchase_price')
+                quantity = request.POST.get('quantity')
+                barcode = request.POST.get('barcode', '').strip() or None
+                category_id = request.POST.get('category_id')
+                supplier_id = request.POST.get('supplier_id')
+
+                if name and sale_price and purchase_price and quantity and category_id and supplier_id:
                     cursor.execute("""
-                                   SELECT r.date, SUM(r.total_amount), s.full_name
-                                   FROM receipt r
-                                            JOIN staff s ON r.staff_id = s.id
-                                   WHERE r.store_id = %s
-                                     AND r.date BETWEEN %s AND %s
-                                   GROUP BY r.date, s.full_name
-                                   ORDER BY r.date
-                                   """, [store_id, start_date, end_date])
-                    rows = cursor.fetchall()
-                    sales_data = [
-                        {'date': str(r[0]), 'amount': float(r[1]), 'seller': r[2]}
-                        for r in rows
-                    ]
-                    if sales_data:
-                        chart_html = build_sales_chart(sales_data)
+                                   INSERT INTO product
+                                   (product_name, sale_price, purchase_price, quantity, barcode, category_id,
+                                    supplier_id)
+                                   VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                   """, [name, sale_price, purchase_price, quantity, barcode, category_id, supplier_id])
+                    success = f'Товар "{name}" успішно додано!'
+                else:
+                    error = "Заповніть усі обов'язкові поля товару."
 
-            elif form_type == 'add_supplier':
-                company_name = request.POST.get('company_name')
-                contact_full_name = request.POST.get('contact_full_name')
-                phone = request.POST.get('phone')
-                email = request.POST.get('email')
+            elif form_type == 'edit_product':
+                product_id = request.POST.get('product_id')
+                name = request.POST.get('product_name', '').strip()
+                sale_price = request.POST.get('sale_price')
+                purchase_price = request.POST.get('purchase_price')
+                quantity = request.POST.get('quantity')
+                barcode = request.POST.get('barcode', '').strip() or None
+                category_id = request.POST.get('category_id')
+                supplier_id = request.POST.get('supplier_id')
+
                 cursor.execute("""
-                               INSERT INTO supplier (company_name, contact_full_name, phone, email)
-                               VALUES (%s, %s, %s, %s)
-                               """, [company_name, contact_full_name, phone, email])
-                success = 'Постачальника успішно додано!'
-                cursor.execute(
-                    "SELECT id, company_name, contact_full_name, phone, email FROM supplier"
-                )
-                suppliers = [
-                    {'id': r[0], 'company_name': r[1], 'contact_full_name': r[2], 'phone': r[3], 'email': r[4]}
-                    for r in cursor.fetchall()
-                ]
-        cursor.execute("""
-                       SELECT p.product_name, SUM(sp.quantity) as total_sold
-                       FROM sale_position sp
-                                JOIN product p ON sp.product_id = p.id
-                                JOIN receipt r ON sp.receipt_id = r.id
-                       WHERE r.store_id = %s
-                       GROUP BY p.product_name
-                       ORDER BY total_sold DESC LIMIT 5
-                       """, [store_id])
-        top_products = [{'name': r[0], 'sold': r[1]} for r in cursor.fetchall()]
+                               UPDATE product
+                               SET product_name=%s,
+                                   sale_price=%s,
+                                   purchase_price=%s,
+                                   quantity=%s,
+                                   barcode=%s,
+                                   category_id=%s,
+                                   supplier_id=%s
+                               WHERE id = %s
+                               """, [name, sale_price, purchase_price, quantity,
+                                     barcode, category_id, supplier_id, product_id])
+                success = f'Товар "{name}" оновлено!'
 
-    return render(request, 'director_panel.html', {
+            elif form_type == 'delete_product':
+                product_id = request.POST.get('product_id')
+                cursor.execute("SELECT product_name FROM product WHERE id=%s", [product_id])
+                p = cursor.fetchone()
+                if p:
+                    cursor.execute("DELETE FROM product WHERE id=%s", [product_id])
+                    success = f'Товар "{p[0]}" видалено!'
+                else:
+                    error = 'Товар не знайдено.'
+
+            elif form_type == 'delete_staff':
+                staff_id = request.POST.get('staff_id')
+                cursor.execute("SELECT full_name FROM staff WHERE id=%s AND store_id=%s", [staff_id, store_id])
+                s = cursor.fetchone()
+                if s:
+                    cursor.execute("DELETE FROM user_auth WHERE staff_id=%s", [staff_id])
+                    cursor.execute("DELETE FROM staff WHERE id=%s", [staff_id])
+                    success = f'Працівника "{s[0]}" видалено!'
+                else:
+                    error = 'Працівника не знайдено або він не належить цьому магазину.'
+            products = get_filtered_products()
+            staff_list = get_staff_list()
+
+    return render(request, 'manager_panel.html', {
         'store_info': store_info,
-        'sellers': sellers,
-        'managers': managers,
+        'products': products,
+        'staff_list': staff_list,
+        'categories': categories,
         'suppliers': suppliers,
-        'sales_data': sales_data,
-        'top_products': top_products,
         'success': success,
-        'form_submitted': form_submitted,
-        'chart_html': chart_html,
+        'error': error,
     })
-
-def manager_panel(request):
-    if not request.session.get('user_id'):
-        return redirect('/login/manager/')
-    return render(request, 'manager_panel.html')
-
 
 def seller_panel(request):
     if not request.session.get('user_id'):

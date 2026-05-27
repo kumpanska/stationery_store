@@ -4,7 +4,7 @@ body {
     margin: 0;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 h1 {
@@ -13,6 +13,7 @@ h1 {
     margin: 0;
     padding: 20px 30px;
     font-size: 26px;
+    z-index: 10;
 }
 
 .side_bar {
@@ -26,6 +27,7 @@ h1 {
     flex-direction: column;
     padding: 20px 0;
     gap: 10px;
+    z-index: 5;
 }
 
 .side_bar .btn {
@@ -50,6 +52,7 @@ h1 {
     margin-left: 240px;
     padding: 40px;
     color: #223125;
+    display: block;
 }
 
 .content h2 {
@@ -58,7 +61,166 @@ h1 {
     color: #223125;
 }
 
+.content h3 {
+    font-size: 20px;
+    margin-bottom: 16px;
+    color: #223125;
+}
+
+.content h4 {
+    font-size: 16px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    color: #223125;
+}
+
 .content p {
     font-size: 16px;
     color: #223125;
+}
+
+.alert-success {
+    color: green;
+    background: #eaffea;
+    border: 1px solid #aed6a0;
+    padding: 10px 16px;
+    margin: 16px 0;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.alert-error {
+    color: #a00;
+    background: #fff0f0;
+    border: 1px solid #f5a0a0;
+    padding: 10px 16px;
+    margin: 16px 0;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+/* СТИЛІЗАЦІЯ ТАБЛИЦЬ */
+table {
+    border-collapse: collapse !important;
+    width: 100%;
+    font-size: 15px;
+    background-color: #ffffff !important;
+    margin-bottom: 25px;
+    margin-top: 10px;
+}
+
+th, td {
+    padding: 10px 14px !important;
+    border: 1px solid #cccccc !important;
+}
+
+thead tr {
+    background-color: #f0f4f0 !important;
+    color: #223125;
+    font-weight: bold;
+}
+
+tbody tr:hover {
+    background-color: #f5f8f5 !important;
+}
+
+/* ФОРМИ ТА ЕЛЕМЕНТИ ВВОДУ */
+form label {
+    font-size: 14px;
+    color: #223125;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+form input[type=text],
+form input[type=email],
+form input[type=date],
+form input[type=number],
+form select {
+    padding: 7px 10px;
+    border: 1px solid #b0c4b0;
+    border-radius: 4px;
+    font-family: Bahnschrift, sans-serif;
+    font-size: 14px;
+    background: #fff;
+    color: #223125;
+    box-sizing: border-box;
+}
+
+form input[type=text]:focus,
+form input[type=email]:focus,
+form input[type=date]:focus,
+form input[type=number]:focus,
+form select:focus {
+    outline: none;
+    border-color: #729969;
+}
+
+form button[type=submit],
+form button {
+    padding: 8px 18px;
+    background-color: #729969;
+    color: #F6F6F6;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Bahnschrift, sans-serif;
+    font-size: 14px;
+}
+
+form button[type=submit]:hover,
+form button:hover {
+    background-color: #223125;
+}
+
+ul {
+    padding-left: 20px;
+    font-size: 15px;
+    color: #223125;
+    line-height: 1.8;
+}
+
+/* НОВІ СТИЛІ ФОРМИ ДОДАВАННЯ ПОСТАЧАЛЬНИКА БЕЗ ТАБЛИЦЬ */
+.supplier-form {
+    max-width: 480px;
+    background-color: #ffffff;
+    padding: 20px;
+    border: 1px solid #b0c4b0;
+    border-radius: 6px;
+    margin-bottom: 30px;
+}
+
+.supplier-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.supplier-form label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #223125;
+}
+
+.supplier-form select {
+    width: 100%;
+    padding: 8px 12px;
+}
+
+.submit-btn-block {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #729969;
+    color: #F6F6F6;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Bahnschrift, sans-serif;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.submit-btn-block:hover {
+    background-color: #223125;
 }
