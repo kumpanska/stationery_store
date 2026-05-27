@@ -24,182 +24,186 @@
     <div class="alert-error">{{ error }}</div>
 {% endif %}
 
-<div class="side_bar">
-    <button class="btn" onclick="showSection('warehouse')">Склад</button>
-    <button class="btn" onclick="showSection('add_product')">Додати товар</button>
-    <button class="btn" onclick="showSection('staff_section')">Працівники</button>
-</div>
+<div class="main-wrapper">
 
-<div class="content">
-    <div id="warehouse" style="display:none;">
-        <h3>Товари на складі</h3>
-        {% if products %}
-            <p class="low-stock" style="font-size:13px;"></p>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="text-align:left;">Назва</th>
-                        <th>Категорія</th>
-                        <th>Постачальник</th>
-                        <th style="text-align:right;">Ціна продажу</th>
-                        <th style="text-align:right;">Закупівельна</th>
-                        <th style="text-align:right;">Кількість</th>
-                        <th>Штрих-код</th>
-                        <th>Дії</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in products %}
-                        <tr {% if p.low_stock %}class="row-low-stock"{% endif %}>
-                            <td>
-                                {{ p.name }}
-                                {% if p.low_stock %}<span class="badge-low">мало!</span>{% endif %}
-                            </td>
-                            <td>{{ p.category }}</td>
-                            <td>{{ p.supplier }}</td>
-                            <td style="text-align:right;">{{ p.sale_price }} грн</td>
-                            <td style="text-align:right;">{{ p.purchase_price }} грн</td>
-                            <td style="text-align:right;" {% if p.low_stock %}class="low-stock"{% endif %}>
-                                {{ p.quantity }}
-                            </td>
-                            <td>{{ p.barcode|default:"—" }}</td>
-                            <td>
-                                <button class="btn-primary" style="padding: 4px 10px; font-size: 13px;" onclick="openEdit(
-                                    '{{ p.id }}','{{ p.name|escapejs }}',
-                                    '{{ p.sale_price }}','{{ p.purchase_price }}',
-                                    '{{ p.quantity }}','{{ p.barcode|default:'' }}',
-                                    '{{ p.category|escapejs }}','{{ p.supplier|escapejs }}'
-                                )">Редагувати</button>
-                                
-                                <form method="post" style="display:inline;"
-                                      onsubmit="return confirm('Видалити товар «{{ p.name }}»?')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="form_type" value="delete_product">
-                                    <input type="hidden" name="product_id" value="{{ p.id }}">
-                                    <button type="submit" class="btn-danger">🗑 Видалити</button>
-                                </form>
-                            </td>
+    <div class="side_bar">
+        <button class="btn" onclick="showSection('warehouse')">Склад</button>
+        <button class="btn" onclick="showSection('add_product')">Додати товар</button>
+        <button class="btn" onclick="showSection('staff_section')">Продавці</button>
+    </div>
+
+    <div class="content">
+        <div id="warehouse" style="display:none;">
+            <h3>Товари на складі</h3>
+            {% if products %}
+                <p class="low-stock" style="font-size:13px;"></p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">Назва</th>
+                            <th>Категорія</th>
+                            <th>Постачальник</th>
+                            <th style="text-align:right;">Ціна продажу</th>
+                            <th style="text-align:right;">Закупівельна</th>
+                            <th style="text-align:right;">Кількість</th>
+                            <th>Штрих-код</th>
+                            <th>Дії</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="color:gray;">Товарів немає.</p>
-        {% endif %}
-    </div>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                            <tr {% if p.low_stock %}class="row-low-stock"{% endif %}>
+                                <td>
+                                    {{ p.name }}
+                                    {% if p.low_stock %}<span class="badge-low">товар закінчується</span>{% endif %}
+                                </td>
+                                <td>{{ p.category }}</td>
+                                <td>{{ p.supplier }}</td>
+                                <td style="text-align:right;">{{ p.sale_price }} грн</td>
+                                <td style="text-align:right;">{{ p.purchase_price }} грн</td>
+                                <td style="text-align:right;" {% if p.low_stock %}class="low-stock"{% endif %}>
+                                    {{ p.quantity }}
+                                </td>
+                                <td>{{ p.barcode|default:"—" }}</td>
+                                <td>
+                                    <button class="btn-primary" style="padding: 4px 10px; font-size: 13px;" onclick="openEdit(
+                                        '{{ p.id }}','{{ p.name|escapejs }}',
+                                        '{{ p.sale_price }}','{{ p.purchase_price }}',
+                                        '{{ p.quantity }}','{{ p.barcode|default:'' }}',
+                                        '{{ p.category|escapejs }}','{{ p.supplier|escapejs }}'
+                                    )">Редагувати</button>
 
-    <div id="add_product" style="display:none;">
-        <h3>Додати товар</h3>
-        <form method="post">
-            {% csrf_token %}
-            <input type="hidden" name="form_type" value="add_product">
-            <div class="form-grid">
-                <label>Назва товару *</label>
-                <input type="text" name="product_name" required>
-                <label>Ціна продажу *</label>
-                <input type="number" name="sale_price" step="0.01" min="0" required>
-                <label>Закупівельна ціна *</label>
-                <input type="number" name="purchase_price" step="0.01" min="0" required>
-                <label>Кількість *</label>
-                <input type="number" name="quantity" min="0" required>
-                <label>Штрих-код</label>
-                <input type="text" name="barcode">
-                <label>Категорія *</label>
-                <select name="category_id" required>
-                    <option value="">оберіть</option>
-                    {% for c in categories %}
-                        <option value="{{ c.id }}">{{ c.name }}</option>
-                    {% endfor %}
-                </select>
-                <label>Постачальник *</label>
-                <select name="supplier_id" required>
-                    <option value="">оберіть</option>
-                    {% for s in suppliers %}
-                        <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
+                                    <form method="post" style="display:inline;"
+                                          onsubmit="return confirm('Видалити товар «{{ p.name }}»?')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="delete_product">
+                                        <input type="hidden" name="product_id" value="{{ p.id }}">
+                                        <button type="submit" class="btn-danger">🗑 Видалити</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color:gray;">Товарів немає.</p>
+            {% endif %}
+        </div>
 
-                <label></label>
-                <button type="submit" class="btn-primary">Додати товар</button>
-            </div>
-        </form>
-    </div>
-
-    <div id="edit_modal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>Редагувати товар</h3>
+        <div id="add_product" style="display:none;">
+            <h3>Додати товар</h3>
             <form method="post">
                 {% csrf_token %}
-                <input type="hidden" name="form_type" value="edit_product">
-                <input type="hidden" name="product_id" id="edit_id">
+                <input type="hidden" name="form_type" value="add_product">
                 <div class="form-grid">
-                    <label>Назва товару</label>
-                    <input type="text" name="product_name" id="edit_name" required>
-                    <label>Ціна продажу</label>
-                    <input type="number" name="sale_price" id="edit_sale" step="0.01" min="0" required>
-                    <label>Ціна закупівлі</label>
-                    <input type="number" name="purchase_price" id="edit_purchase" step="0.01" min="0" required>
-                    <label>Кількість</label>
-                    <input type="number" name="quantity" id="edit_qty" min="0" required>
+                    <label>Назва товару *</label>
+                    <input type="text" name="product_name" required>
+                    <label>Ціна продажу *</label>
+                    <input type="number" name="sale_price" step="0.01" min="0" required>
+                    <label>Закупівельна ціна *</label>
+                    <input type="number" name="purchase_price" step="0.01" min="0" required>
+                    <label>Кількість *</label>
+                    <input type="number" name="quantity" min="0" required>
                     <label>Штрих-код</label>
-                    <input type="text" name="barcode" id="edit_barcode">
-                    <label>Категорія</label>
-                    <select name="category_id" id="edit_category" required>
+                    <input type="text" name="barcode">
+                    <label>Категорія *</label>
+                    <select name="category_id" required>
+                        <option value="">оберіть</option>
                         {% for c in categories %}
                             <option value="{{ c.id }}">{{ c.name }}</option>
                         {% endfor %}
                     </select>
-                    <label>Постачальник</label>
-                    <select name="supplier_id" id="edit_supplier" required>
+                    <label>Постачальник *</label>
+                    <select name="supplier_id" required>
+                        <option value="">оберіть</option>
                         {% for s in suppliers %}
                             <option value="{{ s.id }}">{{ s.name }}</option>
                         {% endfor %}
                     </select>
+
                     <label></label>
-                    <div>
-                        <button type="submit" class="btn-primary">Зберегти</button>
-                        <button type="button" class="btn-secondary" onclick="closeEdit()" style="margin-left:10px;">
-                            Скасувати
-                        </button>
-                    </div>
+                    <button type="submit" class="btn-primary">Додати товар</button>
                 </div>
             </form>
         </div>
+
+        <div id="edit_modal" class="modal-overlay">
+            <div class="modal-box">
+                <h3>Редагувати товар</h3>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="edit_product">
+                    <input type="hidden" name="product_id" id="edit_id">
+                    <div class="form-grid">
+                        <label>Назва товару</label>
+                        <input type="text" name="product_name" id="edit_name" required>
+                        <label>Ціна продажу</label>
+                        <input type="number" name="sale_price" id="edit_sale" step="0.01" min="0" required>
+                        <label>Ціна закупівлі</label>
+                        <input type="number" name="purchase_price" id="edit_purchase" step="0.01" min="0" required>
+                        <label>Кількість</label>
+                        <input type="number" name="quantity" id="edit_qty" min="0" required>
+                        <label>Штрих-код</label>
+                        <input type="text" name="barcode" id="edit_barcode">
+                        <label>Категорія</label>
+                        <select name="category_id" id="edit_category" required>
+                            {% for c in categories %}
+                                <option value="{{ c.id }}">{{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <label>Постачальник</label>
+                        <select name="supplier_id" id="edit_supplier" required>
+                            {% for s in suppliers %}
+                                <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <label></label>
+                        <div>
+                            <button type="submit" class="btn-primary">Зберегти</button>
+                            <button type="button" class="btn-secondary" onclick="closeEdit()" style="margin-left:10px;">
+                                Скасувати
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="staff_section" style="display:none;">
+            <h3>Продавці магазину: "{{ store_info.0 }}"</h3>
+            {% if staff_list %}
+                <table style="max-width:580px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;">ПІБ</th>
+                            <th>Посада</th>
+                            <th>Дія</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in staff_list %}
+                            <tr>
+                                <td>{{ s.full_name }}</td>
+                                <td style="text-align:center;">{{ s.position }}</td>
+                                <td style="text-align:center;">
+                                    <form method="post" style="display:inline;"
+                                          onsubmit="return confirm('Видалити працівника «{{ s.full_name }}»?')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="delete_staff">
+                                        <input type="hidden" name="staff_id" value="{{ s.id }}">
+                                        <button type="submit" class="btn-danger">🗑 Видалити</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color:gray;">Продавців немає.</p>
+            {% endif %}
+        </div>
     </div>
 
-    <div id="staff_section" style="display:none;">
-        <h3>Працівники магазину: {{ store_info.0 }}</h3>
-        {% if staff_list %}
-            <table style="max-width:580px;">
-                <thead>
-                    <tr>
-                        <th style="text-align:left;">ПІБ</th>
-                        <th>Посада</th>
-                        <th>Дія</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in staff_list %}
-                        <tr>
-                            <td>{{ s.full_name }}</td>
-                            <td style="text-align:center;">{{ s.position }}</td>
-                            <td style="text-align:center;">
-                                <form method="post" style="display:inline;"
-                                      onsubmit="return confirm('Видалити працівника «{{ s.full_name }}»?')">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="form_type" value="delete_staff">
-                                    <input type="hidden" name="staff_id" value="{{ s.id }}">
-                                    <button type="submit" class="btn-danger">🗑 Видалити</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p style="color:gray;">Працівників немає.</p>
-        {% endif %}
-    </div>
 </div>
 
 <script>

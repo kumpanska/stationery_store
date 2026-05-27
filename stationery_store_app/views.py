@@ -318,7 +318,6 @@ def manager_panel(request):
     user_auth_id = request.session.get('user_id')
     if not user_auth_id:
         return redirect('/login/manager/')
-
     store_id = None
     store_info = None
     products = []
@@ -327,7 +326,6 @@ def manager_panel(request):
     suppliers = []
     success = None
     error = None
-
     with connection.cursor() as cursor:
         cursor.execute("""
                        SELECT s.store_id
@@ -383,7 +381,7 @@ def manager_panel(request):
                            SELECT id, full_name, staff_position
                            FROM staff
                            WHERE store_id = %s
-                             AND staff_position IN ('Продавець', 'Менеджер')
+                             AND staff_position = 'Продавець'
                            ORDER BY staff_position, full_name
                            """, [store_id])
             return [{'id': r[0], 'full_name': r[1], 'position': r[2]} for r in cursor.fetchall()]

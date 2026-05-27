@@ -2,6 +2,7 @@ body {
     font-family: Bahnschrift, sans-serif;
     background-color: #F6F6F6;
     margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -16,9 +17,15 @@ h1 {
     z-index: 10;
 }
 
+.main-wrapper {
+    display: flex;
+    flex: 1;
+    position: relative;
+}
+
 .side_bar {
-    position: fixed;
-    top: 70px;
+    position: absolute;
+    top: 0;
     left: 0;
     width: 220px;
     height: 100%;
@@ -27,6 +34,7 @@ h1 {
     flex-direction: column;
     padding: 20px 0;
     gap: 10px;
+    box-sizing: border-box;
     z-index: 5;
 }
 
@@ -49,9 +57,11 @@ h1 {
 }
 
 .content {
-    margin-left: 240px;
+    margin-left: 220px;
     padding: 40px;
     color: #223125;
+    flex: 1;
+    box-sizing: border-box;
     display: block;
 }
 
@@ -99,7 +109,6 @@ h1 {
     font-size: 15px;
 }
 
-/* СТИЛІЗАЦІЯ ТАБЛИЦЬ */
 table {
     border-collapse: collapse !important;
     width: 100%;
@@ -124,7 +133,6 @@ tbody tr:hover {
     background-color: #f5f8f5 !important;
 }
 
-/* ФОРМИ ТА ЕЛЕМЕНТИ ВВОДУ */
 form label {
     font-size: 14px;
     color: #223125;
@@ -180,7 +188,6 @@ ul {
     line-height: 1.8;
 }
 
-/* НОВІ СТИЛІ ФОРМИ ДОДАВАННЯ ПОСТАЧАЛЬНИКА БЕЗ ТАБЛИЦЬ */
 .supplier-form {
     max-width: 480px;
     background-color: #ffffff;
