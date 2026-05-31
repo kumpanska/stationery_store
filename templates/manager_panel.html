@@ -55,10 +55,15 @@
                     </thead>
                     <tbody>
                     {% for p in products %}
-                        <tr {% if p.low_stock %}class="row-low-stock"{% endif %}>
+                        <tr {% if p.low_stock or p.quantity == 0 %}class="row-low-stock"{% endif %}>
                             <td>
                                 {{ p.name }}
-                                {% if p.low_stock %}<span class="badge-low">товар закінчується</span>{% endif %}
+
+                                {% if p.quantity == 0 %}
+                                    <span class="badge-low" style="background: #fce4e4; color: #cc0000;">товар закінчився</span>
+                                {% elif p.low_stock %}
+                                    <span class="badge-low">товар закінчується</span>
+                                {% endif %}
                             </td>
                             <td>{{ p.category }}</td>
                             <td>{{ p.supplier }}</td>
@@ -274,6 +279,7 @@
         document.querySelectorAll('.content > div:not(#edit_modal)').forEach(d => d.style.display = 'none');
         document.getElementById(id).style.display = 'block';
     }
+
     function openEdit(id, name, sale, purchase, qty, barcode, category, supplier) {
         document.getElementById('edit_id').value = id;
         document.getElementById('edit_name').value = name;
@@ -285,6 +291,7 @@
         setSelectByText('edit_supplier', supplier);
         document.getElementById('edit_modal').style.display = 'flex';
     }
+
     function setSelectByText(selectId, text) {
         const sel = document.getElementById(selectId);
         for (let i = 0; i < sel.options.length; i++) {
@@ -294,9 +301,11 @@
             }
         }
     }
+
     function closeEdit() {
         document.getElementById('edit_modal').style.display = 'none';
     }
+
     function filterProductsBySupplier() {
         const supplierSelect = document.getElementById('arrival_supplier');
         const supplierName = supplierSelect.options[supplierSelect.selectedIndex].text;

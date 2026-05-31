@@ -7,45 +7,196 @@
     <link rel="stylesheet" href="{% static 'css/seller_panel_styles.css' %}">
 </head>
 <body>
-<h1>Панель продавця</h1>
 
-{% if success %}
-  <div class="alert alert-success" style="color:green; margin:20px;">
-      {{ success }}
-  </div>
-{% endif %}
+<div class="header-container">
+    <h1>Панель продавця</h1>
+    {% if store_info %}
+        <p class="store-info"><b>{{ store_info.0 }}</b> | {{ store_info.1 }}</p>
+    {% endif %}
+</div>
+<div class="main-wrapper">
+    <div class="side_bar">
+        <button class="btn" onclick="showSection('receiptSection')">Формування чеку</button>
+        <button class="btn" onclick="showSection('historySection')">Історія продажів</button>
+    </div>
 
-<div class="side_bar">
-    <button class="btn" onclick="document.getElementById('receiptForm').style.display='block'">
-        Формування чеку
-    </button>
-    <button class="btn">Історія продажів</button>
+    <div class="content">
+
+        {% if success %}
+            <div class="alert alert-success">
+                {{ success }}
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+        {% endif %}
+        <div id="receiptSection" class="panel-section" style="display:block;">
+            <h2>Формування чека</h2>
+            <p>Оберіть товари, вкажіть кількість та збережіть чек у системі.</p>
+
+            <div class="product-picker">
+                <label for="product_select"><b>Оберіть товар:</b></label>
+                <select id="product_select">
+                    <option value="">Оберіть товар</option>
+                    {% for p in products %}
+                        <option value="{{ p.id }}" data-price="{{ p.sale_price }}">
+                            {{ p.name }} (Ціна: {{ p.sale_price }} грн | Залишок: {{ p.quantity }})
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label for="product_qty"><b>Кількість:</b></label>
+                <input type="number" id="product_qty" value="1" min="1">
+
+                <button type="button" class="btn" onclick="addProductToReceipt()">
+                    Додати в чек
+                </button>
+            </div>
+
+            <form id="receiptForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="new_sale">
+
+                <table id="receiptTable" class="receipt-table">
+                    <thead>
+                    <tr>
+                        <th>Товар</th>
+                        <th>Ціна за од.</th>
+                        <th>Кількість</th>
+                        <th>Загалом</th>
+                        <th>Дія</th>
+                    </tr>
+                    </thead>
+                    <tbody id="receiptItemsBody">
+                    </tbody>
+                </table>
+
+                <div class="payment-method-container">
+                    <label for="payment_method"><b>Спосіб оплати:</b></label>
+                    <select id="payment_method" name="payment_method" required>
+                        <option value="">Оберіть</option>
+                        <option value="Готівка">Готівка</option>
+                        <option value="Картка">Картка</option>
+                    </select>
+                </div>
+
+                <h3 class="grand-total-text">Разом до сплати: <span id="grandTotal">0.00</span> грн</h3>
+                <button type="submit" class="btn">
+                    Зафіксувати продаж (Зберегти чек)
+                </button>
+            </form>
+        </div>
+
+        <div id="historySection" class="panel-section" style="display:none;">
+            <h2>Історія твоїх продажів (Останні 50 чеків)</h2>
+            <table class="receipt-table">
+                <thead>
+                <tr>
+                    <th>ID Чек</th>
+                    <th>Дата</th>
+                    <th>Спосіб оплати</th>
+                    <th>К-сть позицій</th>
+                    <th>Загальна сума</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for sale in my_sales %}
+                    <tr>
+                        <td>#{{ sale.id }}</td>
+                        <td>{{ sale.date }}</td>
+                        <td>{{ sale.payment_method }}</td>
+                        <td>{{ sale.items_count }}</td>
+                        <td><b>{{ sale.total_amount|floatformat:2 }} грн</b></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-history">Ви ще не оформили жодного чека за сьогодні.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div class="content">
-    <h2>Формування чеку</h2>
-    <p>Додайте позиції продажу та збережіть чек у системі.</p>
-    <form id="receiptForm" method="post" style="display:none;">
-        {% csrf_token %}
-        <label for="product">Товар:</label>
-        <select id="product" name="product_id">
-            {% for p in products %}
-                <option value="{{ p.id }}">{{ p.product_name }} ({{ p.barcode }})</option>
-            {% endfor %}
-        </select>
-        <label for="quantity">Кількість:</label>
-        <input type="number" id="quantity" name="quantity" min="1" value="1">
-        <label for="sale_price">Ціна продажу:</label>
-        <input type="number" id="sale_price" name="sale_price" step="0.01">
-        <label for="discount">Знижка:</label>
-        <input type="number" id="discount" name="discount" step="0.01" value="0">
-        <label for="payment_method">Спосіб оплати:</label>
-        <select id="payment_method" name="payment_method">
-            <option value="Готівка">Готівка</option>
-            <option value="Картка">Картка</option>
-        </select>
-        <button type="submit">Зберегти чек</button>
-    </form>
-</div>
+<script>
+    function showSection(sectionId) {
+        document.querySelectorAll('.panel-section').forEach(sec => sec.style.display = 'none');
+        document.getElementById(sectionId).style.display = 'block';
+    }
+
+    function addProductToReceipt() {
+        const select = document.getElementById('product_select');
+        const qtyInput = document.getElementById('product_qty');
+        const productId = select.value;
+        const productName = select.options[select.selectedIndex]?.text.split(' (Ціна:')[0].trim();
+        const price = parseFloat(select.options[select.selectedIndex]?.getAttribute('data-price'));
+        const quantity = parseInt(qtyInput.value);
+
+        if (!productId || quantity <= 0) {
+            alert('Будь ласка, оберіть товар та вкажіть коректну кількість.');
+            return;
+        }
+
+        const tbody = document.getElementById('receiptItemsBody');
+        const existingRow = document.querySelector(`tr[data-product-id="${productId}"]`);
+        if (existingRow) {
+            const qtyField = existingRow.querySelector('.row-qty');
+            const totalField = existingRow.querySelector('.row-total');
+            const newQty = parseInt(qtyField.value) + quantity;
+            qtyField.value = newQty.toString();
+            totalField.innerText = (newQty * price).toFixed(2);
+        } else {
+            const rowTotal = (price * quantity).toFixed(2);
+            const row = document.createElement('tr');
+            row.setAttribute('data-product-id', productId);
+            row.innerHTML = `
+                <td>
+                    ${productName}
+                    <input type="hidden" name="product_id" value="${productId}">
+                </td>
+                <td>${price.toFixed(2)} грн</td>
+                <td>
+                    <input type="number" name="sale_quantity" class="row-qty" value="${quantity}" min="1" onchange="updateRowTotal(this, ${price})">
+                </td>
+                <td><span class="row-total">${rowTotal}</span> грн</td>
+                <td>
+                    <button type="button" class="btn-delete" onclick="this.closest('tr').remove(); calculateGrandTotal();">Видалити</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+        select.value = "";
+        qtyInput.value = "1";
+        calculateGrandTotal();
+    }
+
+    function updateRowTotal(input, price) {
+        const qty = parseInt(input.value) || 0;
+        const row = input.closest('tr');
+        const totalField = row.querySelector('.row-total');
+        totalField.innerText = (qty * price).toFixed(2);
+        calculateGrandTotal();
+    }
+
+    function calculateGrandTotal() {
+        let grandTotal = 0;
+        document.querySelectorAll('.row-total').forEach(span => {
+            grandTotal += parseFloat(span.innerText) || 0;
+        });
+        document.getElementById('grandTotal').innerText = grandTotal.toFixed(2);
+    }
+
+    document.getElementById('receiptForm').addEventListener('submit', function (e) {
+        const itemsCount = document.querySelectorAll('#receiptItemsBody tr').length;
+        if (itemsCount === 0) {
+            e.preventDefault();
+            alert('Неможливо зберегти порожній чек! Додайте хоча б один товар.');
+        }
+    });
+</script>
 </body>
 </html>

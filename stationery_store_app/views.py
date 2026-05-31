@@ -99,6 +99,7 @@ def register(request, role):
         'role_latin': role
     })
 
+
 def reset_password(request):
     if request.method == "POST":
         username = request.POST.get('username')
@@ -188,6 +189,7 @@ def director_panel(request):
 
         cursor.execute("SELECT store_name, address FROM store WHERE id = %s", [store_id])
         store_info = cursor.fetchone()
+
         cursor.execute("""
                        SELECT id, full_name
                        FROM staff
@@ -236,33 +238,39 @@ def director_panel(request):
                 if start_date and end_date:
                     if selected_seller_id:
                         cursor.execute("""
-                                       SELECT r.date, SUM(r.total_amount), s.full_name, r.payment_method
+                                       SELECT r.date, r.time, SUM(r.total_amount), s.full_name, r.payment_method
                                        FROM receipt r
                                                 JOIN staff s ON r.staff_id = s.id
                                        WHERE r.store_id = %s
                                          AND r.date BETWEEN %s AND %s
                                          AND r.staff_id = %s
-                                       GROUP BY r.date, s.full_name, r.payment_method
-                                       ORDER BY r.date
+                                       GROUP BY r.date, r.time, s.full_name, r.payment_method
+                                       ORDER BY r.date DESC, r.time DESC
                                        """, [store_id, start_date, end_date, selected_seller_id])
                     else:
                         cursor.execute("""
-                                       SELECT r.date, SUM(r.total_amount), s.full_name, r.payment_method
+                                       SELECT r.date, r.time, SUM(r.total_amount), s.full_name, r.payment_method
                                        FROM receipt r
                                                 JOIN staff s ON r.staff_id = s.id
                                        WHERE r.store_id = %s
                                          AND r.date BETWEEN %s AND %s
-                                       GROUP BY r.date, s.full_name, r.payment_method
-                                       ORDER BY r.date
+                                       GROUP BY r.date, r.time, s.full_name, r.payment_method
+                                       ORDER BY r.date DESC, r.time DESC
                                        """, [store_id, start_date, end_date])
                     rows = cursor.fetchall()
                     sales_data = [
-                        {'date': str(r[0]), 'amount': float(r[1]),
-                         'seller': r[2], 'payment_method': r[3]}
+                        {
+                            'date': f"{r[0]} {r[1].strftime('%H:%M:%S') if r[1] else ''}".strip(),
+                            'amount': float(r[2]),
+                            'seller': r[3],
+                            'payment_method': r[4]
+                        }
                         for r in rows
                     ]
-                    if sales_data:
+
+                    if sales_data and 'build_sales_chart' in globals():
                         chart_html = build_sales_chart(sales_data)
+
                     cursor.execute("""
                                    SELECT s.full_name,
                                           COUNT(r.id)         AS receipts_count,
@@ -278,6 +286,7 @@ def director_panel(request):
                         {'name': r[0], 'receipts': r[1], 'total': float(r[2])}
                         for r in cursor.fetchall()
                     ]
+
             elif form_type == 'add_supplier':
                 supplier_id_to_add = request.POST.get('existing_supplier_id', '').strip()
                 if supplier_id_to_add:
@@ -301,6 +310,7 @@ def director_panel(request):
                         )
                         name = cursor.fetchone()[0]
                         success = f'Постачальника "{name}" успішно прив\'язано до магазину!'
+
                         cursor.execute("""
                                        SELECT sup.id, sup.company_name, sup.contact_full_name, sup.phone, sup.email
                                        FROM supplier sup
@@ -333,6 +343,7 @@ def director_panel(request):
         'all_suppliers': all_suppliers,
     })
 
+
 def manager_panel(request):
     user_auth_id = request.session.get('user_id')
     if not user_auth_id:
@@ -346,7 +357,6 @@ def manager_panel(request):
     arrivals_list = []
     success = None
     error = None
-
     with connection.cursor() as cursor:
         cursor.execute("""
                        SELECT s.store_id
@@ -358,13 +368,10 @@ def manager_panel(request):
         if not row:
             return redirect('/login/manager/')
         store_id = row[0]
-
         cursor.execute("SELECT store_name, address FROM store WHERE id = %s", [store_id])
         store_info = cursor.fetchone()
-
         cursor.execute("SELECT id, category_name FROM products_category ORDER BY category_name")
         categories = [{'id': r[0], 'name': r[1]} for r in cursor.fetchall()]
-
         cursor.execute("""
                        SELECT s.id, s.company_name
                        FROM supplier s
@@ -440,7 +447,6 @@ def manager_panel(request):
 
         if request.method == 'POST':
             form_type = request.POST.get('form_type')
-
             if form_type == 'add_product':
                 name = request.POST.get('product_name', '').strip()
                 sale_price = request.POST.get('sale_price')
@@ -536,7 +542,7 @@ def manager_panel(request):
                                 with transaction.atomic():
                                     cursor.execute("""
                                                    INSERT INTO arrival_of_goods (date, supplier_id, store_id, total_amount)
-                                                   VALUES (NOW(), %s, %s, %s) RETURNING id
+                                                   VALUES (CURRENT_DATE, %s, %s, %s) RETURNING id
                                                    """, [supplier_id, store_id, total_amount])
                                     arrival_id = cursor.fetchone()[0]
                                     cursor.execute("""
@@ -551,7 +557,7 @@ def manager_panel(request):
                                                    """, [quantity, product_id])
                                 success = "Надходження успішно додано!"
                             except Exception as e:
-                                error = f"Помилка бази даних при проведенні надходження: {e}"
+                                error = f"Помилка бази даних при проведені надходження: {e}"
 
         products = get_filtered_products()
         staff_list = get_staff_list()
@@ -567,6 +573,7 @@ def manager_panel(request):
         'success': success,
         'error': error,
     })
+
 
 def seller_panel(request):
     user_auth_id = request.session.get('user_id')
@@ -621,22 +628,23 @@ def seller_panel(request):
             cursor.execute("""
                            SELECT r.id,
                                   r.date,
+                                  r.time,
                                   r.total_amount,
                                   r.payment_method,
                                   COUNT(sp.id) AS items_count
                            FROM receipt r
                                     JOIN sale_position sp ON sp.receipt_id = r.id
                            WHERE r.staff_id = %s
-                           GROUP BY r.id, r.date, r.total_amount, r.payment_method
-                           ORDER BY r.date DESC LIMIT 50
+                           GROUP BY r.id, r.date, r.time, r.total_amount, r.payment_method
+                           ORDER BY r.date DESC, r.time DESC LIMIT 50
                            """, [staff_id])
             return [
                 {
                     'id': r[0],
-                    'date': r[1],
-                    'total_amount': float(r[2]),
-                    'payment_method': r[3],
-                    'items_count': r[4],
+                    'date': f"{r[1]} {r[2].strftime('%H:%M:%S') if r[2] else ''}".strip(),
+                    'total_amount': float(r[3]),
+                    'payment_method': r[4],
+                    'items_count': r[5],
                 }
                 for r in cursor.fetchall()
             ]
@@ -683,8 +691,8 @@ def seller_panel(request):
                         try:
                             with transaction.atomic():
                                 cursor.execute("""
-                                               INSERT INTO receipt (date, total_amount, payment_method, staff_id, store_id)
-                                               VALUES (NOW(), %s, %s, %s, %s) RETURNING id
+                                               INSERT INTO receipt (date, time, total_amount, payment_method, staff_id, store_id)
+                                               VALUES (CURRENT_DATE, CURRENT_TIME, %s, %s, %s, %s) RETURNING id
                                                """, [total_amount, payment_method, staff_id, store_id])
                                 receipt_id = cursor.fetchone()[0]
                                 for product_id, qty, price in validated_items:

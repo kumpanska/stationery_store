@@ -4,28 +4,43 @@ body {
     margin: 0;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    min-height: 100vh;
+}
+
+.header-container {
+    background-color: #223125;
 }
 
 h1 {
     background-color: #223125;
     color: #F6F6F6;
     margin: 0;
-    padding: 20px 30px;
+    padding: 20px 30px 5px 30px;
     font-size: 26px;
 }
 
+.store-info {
+    color: #E6E7EB;
+    margin: 0;
+    padding: 0 30px 15px 30px;
+    font-size: 14px;
+}
+
+.main-wrapper {
+    display: flex;
+    flex: 1;
+}
+
 .side_bar {
-    position: fixed;
-    top: 70px;
-    left: 0;
     width: 220px;
-    height: 100%;
+    min-height: 100%;
     background-color: #E6E7EB;
     display: flex;
     flex-direction: column;
     padding: 20px 0;
     gap: 10px;
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .side_bar .btn {
@@ -47,9 +62,10 @@ h1 {
 }
 
 .content {
-    margin-left: 240px;
     padding: 40px;
     color: #223125;
+    flex: 1;
+    box-sizing: border-box;
 }
 
 .content h2 {
@@ -66,15 +82,16 @@ h1 {
 form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: 400px;
+    gap: 15px;
+    max-width: 800px;
 }
 
-form input, form button {
+form input, form select, form button {
     padding: 10px;
     font-size: 15px;
     border-radius: 5px;
     border: 1px solid #ccc;
+    font-family: Bahnschrift, sans-serif;
 }
 
 form button {
@@ -87,4 +104,148 @@ form button {
 form button:hover {
     background-color: #223125;
     color: #E6E7EB;
+}
+
+.product-picker {
+    background-color: #E6E7EB;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    max-width: 760px;
+}
+
+.product-picker select {
+    padding: 10px;
+    font-size: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 300px;
+    font-family: Bahnschrift, sans-serif;
+}
+
+.product-picker input[type="number"] {
+    padding: 10px;
+    font-size: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 70px;
+    font-family: Bahnschrift, sans-serif;
+}
+
+.product-picker .btn {
+    padding: 10px 20px;
+    font-size: 15px;
+    background-color: #729969;
+    color: #F6F6F6;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: Bahnschrift, sans-serif;
+}
+
+.product-picker .btn:hover {
+    background-color: #223125;
+    color: #E6E7EB;
+}
+
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    background-color: #FFF;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid #E6E7EB;
+}
+
+.receipt-table th {
+    background-color: #223125;
+    color: #F6F6F6;
+    padding: 12px;
+    text-align: left;
+    font-size: 15px;
+}
+
+.receipt-table td {
+    padding: 12px;
+    border-bottom: 1px solid #E6E7EB;
+    font-size: 15px;
+}
+
+.receipt-table input[type="number"] {
+    width: 60px;
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-family: Bahnschrift, sans-serif;
+}
+
+.btn-delete {
+    background-color: #C0392B;
+    color: #F6F6F6;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: Bahnschrift, sans-serif;
+    font-size: 13px;
+}
+
+.btn-delete:hover {
+    background-color: #962D22;
+}
+
+.payment-method-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-width: 200px;
+}
+
+.payment-method-container select {
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-family: Bahnschrift, sans-serif;
+}
+
+.grand-total-text {
+    color: #223125;
+    font-size: 22px;
+    margin: 15px 0;
+}
+
+.grand-total-text span {
+    color: #729969;
+    font-weight: bold;
+}
+
+.alert {
+    padding: 15px;
+    margin: 20px 0 0 0;
+    border-radius: 5px;
+    font-size: 15px;
+}
+
+.alert-success {
+    color: green;
+    background-color: #E8F8F5;
+    border: 1px solid #A3E4D7;
+}
+
+.alert-danger {
+    color: #C0392B;
+    background-color: #FDEDEC;
+    border: 1px solid #F9D5D3;
+}
+
+.empty-history {
+    text-align: center;
+    color: #7F8C8D;
+    padding: 20px;
 }
