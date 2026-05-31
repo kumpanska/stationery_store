@@ -93,7 +93,12 @@ h1 {
     font-size: 16px;
     color: #223125;
 }
-
+.alert {
+    padding: 15px;
+    margin: 20px 30px 0 30px;
+    border-radius: 5px;
+    font-size: 15px;
+}
 .alert-success {
     color: green;
     background: #eaffea;

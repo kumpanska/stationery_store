@@ -17,7 +17,6 @@
 {% endif %}
 
 <div class="main-wrapper">
-
     <div class="side_bar">
         <button class="btn" onclick="showSection('warehouse')">Склад</button>
         <button class="btn" onclick="showSection('add_product')">Додати товар</button>
@@ -27,14 +26,13 @@
     </div>
 
     <div class="content">
-
         {% if success %}
             <div class="alert-success">{{ success }}</div>
         {% endif %}
-
         {% if error %}
             <div class="alert-error">{{ error }}</div>
         {% endif %}
+
         <div id="warehouse" style="display:none;">
             <h3>Товари на складі</h3>
             {% if products %}
@@ -57,9 +55,8 @@
                         <tr {% if p.low_stock or p.quantity == 0 %}class="row-low-stock"{% endif %}>
                             <td>
                                 {{ p.name }}
-
                                 {% if p.quantity == 0 %}
-                                    <span class="badge-low" style="background: #fce4e4; color: #cc0000;">товар закінчився</span>
+                                    <span class="badge-out">товар закінчився</span>
                                 {% elif p.low_stock %}
                                     <span class="badge-low">товар закінчується</span>
                                 {% endif %}
@@ -111,7 +108,7 @@
                     <label>Кількість *</label>
                     <input type="number" name="quantity" min="0" required>
                     <label>Штрих-код</label>
-                    <input type="text" name="barcode" placeholder="482000000049" required>
+                    <input type="text" name="barcode" placeholder="482000000049">
                     <label>Категорія *</label>
                     <select name="category_id" required>
                         <option value="">оберіть</option>
@@ -275,7 +272,8 @@
 
 <script>
     function showSection(id) {
-        document.querySelectorAll('.content > div:not(#edit_modal)').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.content > div:not(.alert-success):not(.alert-error):not(#edit_modal)')
+            .forEach(d => d.style.display = 'none');
         document.getElementById(id).style.display = 'block';
     }
 
@@ -319,6 +317,7 @@
         });
         productSelect.value = '';
     }
+
     {% if success %}
         {% if 'Надходження' in success %}
             showSection('arrivals_list');

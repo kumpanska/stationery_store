@@ -10,6 +10,12 @@
 <body>
 <h1>Панель директора</h1>
 
+{% if store_info %}
+    <p class="store-info">
+        Магазин: <b>{{ store_info.0 }}</b> — {{ store_info.1 }}
+    </p>
+{% endif %}
+
 <div class="main-wrapper">
 
     <div class="side_bar">
@@ -27,6 +33,7 @@
         {% if error %}
             <div class="alert-error">{{ error }}</div>
         {% endif %}
+
         <div id="sales_stats" style="display:none;">
             <h3>Статистика продажів: "{{ store_info.0 }}"</h3>
             <form method="post">
@@ -35,8 +42,8 @@
                 <label>Період:</label>
                 <input type="date" name="start_date"> –
                 <input type="date" name="end_date">
-                <label style="margin-left:16px;">Продавець:</label>
-                <select name="seller_id" style="width: auto;">
+                <label class="ml-10">Продавець:</label>
+                <select name="seller_id" class="select-auto">
                     <option value=""> Всі</option>
                     {% for s in sellers %}
                         <option value="{{ s.id }}"
@@ -45,31 +52,31 @@
                         </option>
                     {% endfor %}
                 </select>
-                <button type="submit" style="margin-left:10px;">Показати</button>
+                <button type="submit" class="btn-primary ml-10">Показати</button>
             </form>
 
             {% if chart_html %}
-                <div style="margin-top:20px;">{{ chart_html|safe }}</div>
+                <div class="chart-container">{{ chart_html|safe }}</div>
             {% elif form_submitted %}
-                <p style="color:gray; margin-top:20px;">За вибраний період немає даних.</p>
+                <p class="text-gray mt-20">За вибраний період немає даних.</p>
             {% endif %}
 
             {% if seller_stats %}
                 <h4>Продажі по продавцях за період</h4>
-                <table style="max-width:600px;">
+                <table class="table-narrow">
                     <thead>
                     <tr>
-                        <th style="text-align:left;">Продавець</th>
-                        <th style="text-align:right;">Чеків</th>
-                        <th style="text-align:right;">Сума (грн)</th>
+                        <th class="text-left">Продавець</th>
+                        <th class="text-right">Чеків</th>
+                        <th class="text-right">Сума (грн)</th>
                     </tr>
                     </thead>
                     <tbody>
                     {% for s in seller_stats %}
                         <tr>
                             <td>{{ s.name }}</td>
-                            <td style="text-align:right;">{{ s.receipts }}</td>
-                            <td style="text-align:right;">{{ s.total }}</td>
+                            <td class="text-right">{{ s.receipts }}</td>
+                            <td class="text-right">{{ s.total }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -84,22 +91,22 @@
                 <p><b>Адреса:</b> {{ store_info.1 }}</p>
             {% endif %}
             <h4>Топ 5 найпопулярніших товарів:</h4>
-            <table style="max-width:480px;">
+            <table class="table-narrow">
                 <thead>
                 <tr>
-                    <th style="text-align:left;">Товар</th>
-                    <th style="text-align:right;">Продано (шт.)</th>
+                    <th class="text-left">Товар</th>
+                    <th class="text-right">Продано (шт.)</th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for t in top_products %}
                     <tr>
                         <td>{{ t.name }}</td>
-                        <td style="text-align:right;">{{ t.sold }}</td>
+                        <td class="text-right">{{ t.sold }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="2" style="color:gray;">Немає даних</td>
+                        <td colspan="2" class="text-gray">Немає даних</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -112,7 +119,7 @@
                 {% for s in sellers %}
                     <li>{{ s.full_name }}</li>
                 {% empty %}
-                    <li style="color:gray;">Немає продавців</li>
+                    <li class="text-gray">Немає продавців</li>
                 {% endfor %}
             </ul>
         </div>
@@ -123,7 +130,7 @@
                 {% for m in managers %}
                     <li>{{ m.full_name }}</li>
                 {% empty %}
-                    <li style="color:gray;">Немає менеджерів</li>
+                    <li class="text-gray">Немає менеджерів</li>
                 {% endfor %}
             </ul>
         </div>
@@ -146,11 +153,11 @@
             </form>
 
             <h4>Список постачальників магазину:</h4>
-            <table style="max-width:720px;">
+            <table class="table-wide">
                 <thead>
                 <tr>
-                    <th style="text-align:left;">Компанія</th>
-                    <th style="text-align:left;">Контакт</th>
+                    <th class="text-left">Компанія</th>
+                    <th class="text-left">Контакт</th>
                     <th>Телефон</th>
                     <th>Email</th>
                 </tr>
@@ -165,20 +172,20 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4" style="color:gray;">Немає постачальників</td>
+                        <td colspan="4" class="text-gray">Немає постачальників</td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
+
     </div>
 </div>
 
 <script>
     function showSection(sectionId) {
-        document.querySelectorAll('.content > div').forEach(function (div) {
-            div.style.display = 'none';
-        });
+        document.querySelectorAll('.content > div:not(.alert-success):not(.alert-error)')
+            .forEach(div => div.style.display = 'none');
         document.getElementById(sectionId).style.display = 'block';
     }
 
