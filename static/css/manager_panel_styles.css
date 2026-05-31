@@ -140,6 +140,7 @@ tbody tr:hover {
 .low-stock {
     color: #c0392b;
     font-weight: bold;
+    font-size: 13px;
 }
 
 .badge-low {
@@ -194,6 +195,10 @@ form select:focus {
     padding-right: 8px;
 }
 
+.form-inline {
+    display: inline;
+}
+
 .btn-primary {
     padding: 8px 18px;
     background-color: #729969;
@@ -207,6 +212,11 @@ form select:focus {
 
 .btn-primary:hover {
     background-color: #223125;
+}
+
+.btn-sm {
+    padding: 4px 10px;
+    font-size: 13px;
 }
 
 .btn-danger {
@@ -251,6 +261,7 @@ form select:focus {
     align-items: center;
     justify-content: center;
 }
+
 .modal-box {
     background: white;
     padding: 28px;
@@ -259,12 +270,27 @@ form select:focus {
     max-width: 560px;
     position: relative;
 }
+
 .modal-box h3 {
     margin-top: 0;
 }
+
 ul {
     padding-left: 20px;
     font-size: 15px;
     color: #223125;
     line-height: 1.8;
+}
+
+.text-left   { text-align: left; }
+.text-right  { text-align: right; }
+.text-center { text-align: center; }
+.text-gray   { color: gray; }
+
+.table-narrow {
+    max-width: 580px;
+}
+
+.ml-10 {
+    margin-left: 10px;
 }

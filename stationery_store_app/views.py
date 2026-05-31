@@ -47,6 +47,7 @@ def login(request, role):
         'error': error
     })
 
+
 def register(request, role):
     roles_titles = {
         'director': 'Директор',
@@ -89,6 +90,7 @@ def register(request, role):
         'role_latin': role
     })
 
+
 def reset_password(request):
     if request.method == "POST":
         username = request.POST.get('username')
@@ -103,6 +105,7 @@ def reset_password(request):
                 return render(request, 'reset_password.html', {'error': 'Користувача не знайдено'})
         return render(request, 'reset_password.html', {'success': 'Пароль успішно змінено'})
     return render(request, 'reset_password.html')
+
 
 def build_sales_chart(sales_data):
     by_date = defaultdict(lambda: {'amount': 0.0, 'sellers': set(), 'payments': set()})
@@ -145,6 +148,7 @@ def build_sales_chart(sales_data):
     )
     return fig.to_html(full_html=False, include_plotlyjs=False)
 
+
 def director_panel(request):
     user_auth_id = request.session.get('user_id')
     if not user_auth_id:
@@ -156,7 +160,7 @@ def director_panel(request):
     suppliers = []
     sales_data = []
     top_products = []
-    seller_stats = []      
+    seller_stats = []
     success = None
     error = None
     form_submitted = False
@@ -196,10 +200,7 @@ def director_panel(request):
             {'id': r[0], 'company_name': r[1], 'contact_full_name': r[2], 'phone': r[3], 'email': r[4]}
             for r in cursor.fetchall()
         ]
-        cursor.execute("""
-            SELECT id, company_name FROM supplier
-            ORDER BY company_name
-        """)
+        cursor.execute("SELECT id, company_name FROM supplier ORDER BY company_name")
         all_suppliers = [{'id': r[0], 'company_name': r[1]} for r in cursor.fetchall()]
         cursor.execute("""
             SELECT p.product_name, SUM(sp.quantity) AS total_sold
@@ -212,6 +213,7 @@ def director_panel(request):
             LIMIT 5
         """, [store_id])
         top_products = [{'name': r[0], 'sold': r[1]} for r in cursor.fetchall()]
+
         if request.method == 'POST':
             form_type = request.POST.get('form_type')
             if form_type == 'sales_stats':
@@ -249,8 +251,8 @@ def director_panel(request):
                         chart_html = build_sales_chart(sales_data)
                     cursor.execute("""
                         SELECT s.full_name,
-                               COUNT(r.id)            AS receipts_count,
-                               SUM(r.total_amount)    AS total
+                               COUNT(r.id) AS receipts_count,
+                               SUM(r.total_amount) AS total
                         FROM receipt r
                         JOIN staff s ON r.staff_id = s.id
                         WHERE r.store_id = %s AND r.date BETWEEN %s AND %s
@@ -324,48 +326,48 @@ def manager_panel(request):
     staff_list = []
     categories = []
     suppliers = []
+    arrivals_list = []
     success = None
     error = None
+
     with connection.cursor() as cursor:
         cursor.execute("""
-                       SELECT s.store_id
-                       FROM staff s
-                                JOIN user_auth ua ON ua.staff_id = s.id
-                       WHERE ua.id = %s
-                       """, [user_auth_id])
+            SELECT s.store_id
+            FROM staff s
+            JOIN user_auth ua ON ua.staff_id = s.id
+            WHERE ua.id = %s
+        """, [user_auth_id])
         row = cursor.fetchone()
         if not row:
             return redirect('/login/manager/')
         store_id = row[0]
+
         cursor.execute("SELECT store_name, address FROM store WHERE id = %s", [store_id])
         store_info = cursor.fetchone()
+
         cursor.execute("SELECT id, category_name FROM products_category ORDER BY category_name")
         categories = [{'id': r[0], 'name': r[1]} for r in cursor.fetchall()]
+
         cursor.execute("""
-                       SELECT s.id, s.company_name
-                       FROM supplier s
-                                JOIN store_supplier ss ON ss.supplier_id = s.id
-                       WHERE ss.store_id = %s
-                       ORDER BY s.company_name
-                       """, [store_id])
+            SELECT s.id, s.company_name
+            FROM supplier s
+            JOIN store_supplier ss ON ss.supplier_id = s.id
+            WHERE ss.store_id = %s
+            ORDER BY s.company_name
+        """, [store_id])
         suppliers = [{'id': r[0], 'name': r[1]} for r in cursor.fetchall()]
+
         def get_filtered_products():
             cursor.execute("""
-                           SELECT p.id,
-                                  p.product_name,
-                                  p.sale_price,
-                                  p.purchase_price,
-                                  p.quantity,
-                                  p.barcode,
-                                  pc.category_name,
-                                  sup.company_name
-                           FROM product p
-                                    JOIN products_category pc ON p.category_id = pc.id
-                                    JOIN supplier sup ON p.supplier_id = sup.id
-                                    JOIN store_supplier ss ON ss.supplier_id = sup.id
-                           WHERE ss.store_id = %s
-                           ORDER BY pc.category_name, p.product_name
-                           """, [store_id])
+                SELECT p.id, p.product_name, p.sale_price, p.purchase_price,
+                       p.quantity, p.barcode, pc.category_name, sup.company_name
+                FROM product p
+                JOIN products_category pc ON p.category_id = pc.id
+                JOIN supplier sup ON p.supplier_id = sup.id
+                JOIN store_supplier ss ON ss.supplier_id = sup.id
+                WHERE ss.store_id = %s
+                ORDER BY pc.category_name, p.product_name
+            """, [store_id])
             return [
                 {
                     'id': r[0], 'name': r[1], 'sale_price': float(r[2]),
@@ -378,15 +380,35 @@ def manager_panel(request):
 
         def get_staff_list():
             cursor.execute("""
-                           SELECT id, full_name, staff_position
-                           FROM staff
-                           WHERE store_id = %s
-                             AND staff_position = 'Продавець'
-                           ORDER BY staff_position, full_name
-                           """, [store_id])
+                SELECT id, full_name, staff_position
+                FROM staff
+                WHERE store_id = %s AND staff_position = 'Продавець'
+                ORDER BY staff_position, full_name
+            """, [store_id])
             return [{'id': r[0], 'full_name': r[1], 'position': r[2]} for r in cursor.fetchall()]
-        products = get_filtered_products()
-        staff_list = get_staff_list()
+
+        def get_arrivals_list():
+            cursor.execute("""
+                SELECT ag.date, sup.company_name, p.product_name,
+                       pa.quantity, pa.purchase_price, ag.total_amount
+                FROM arrival_of_goods ag
+                JOIN supplier sup ON ag.supplier_id = sup.id
+                JOIN position_of_arrival pa ON pa.arrival_of_goods_id = ag.id
+                JOIN product p ON pa.product_id = p.id
+                WHERE ag.store_id = %s
+                ORDER BY ag.date DESC
+            """, [store_id])
+            return [
+                {
+                    'date': r[0],
+                    'supplier': r[1],
+                    'product': r[2],
+                    'quantity': r[3],
+                    'purchase_price': float(r[4]),
+                    'total_amount': float(r[5]),
+                }
+                for r in cursor.fetchall()
+            ]
 
         if request.method == 'POST':
             form_type = request.POST.get('form_type')
@@ -399,14 +421,12 @@ def manager_panel(request):
                 barcode = request.POST.get('barcode', '').strip() or None
                 category_id = request.POST.get('category_id')
                 supplier_id = request.POST.get('supplier_id')
-
                 if name and sale_price and purchase_price and quantity and category_id and supplier_id:
                     cursor.execute("""
-                                   INSERT INTO product
-                                   (product_name, sale_price, purchase_price, quantity, barcode, category_id,
-                                    supplier_id)
-                                   VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                   """, [name, sale_price, purchase_price, quantity, barcode, category_id, supplier_id])
+                        INSERT INTO product
+                        (product_name, sale_price, purchase_price, quantity, barcode, category_id, supplier_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """, [name, sale_price, purchase_price, quantity, barcode, category_id, supplier_id])
                     success = f'Товар "{name}" успішно додано!'
                 else:
                     error = "Заповніть усі обов'язкові поля товару."
@@ -420,19 +440,13 @@ def manager_panel(request):
                 barcode = request.POST.get('barcode', '').strip() or None
                 category_id = request.POST.get('category_id')
                 supplier_id = request.POST.get('supplier_id')
-
                 cursor.execute("""
-                               UPDATE product
-                               SET product_name=%s,
-                                   sale_price=%s,
-                                   purchase_price=%s,
-                                   quantity=%s,
-                                   barcode=%s,
-                                   category_id=%s,
-                                   supplier_id=%s
-                               WHERE id = %s
-                               """, [name, sale_price, purchase_price, quantity,
-                                     barcode, category_id, supplier_id, product_id])
+                    UPDATE product
+                    SET product_name=%s, sale_price=%s, purchase_price=%s,
+                        quantity=%s, barcode=%s, category_id=%s, supplier_id=%s
+                    WHERE id = %s
+                """, [name, sale_price, purchase_price, quantity,
+                      barcode, category_id, supplier_id, product_id])
                 success = f'Товар "{name}" оновлено!'
 
             elif form_type == 'delete_product':
@@ -455,8 +469,48 @@ def manager_panel(request):
                     success = f'Працівника "{s[0]}" видалено!'
                 else:
                     error = 'Працівника не знайдено або він не належить цьому магазину.'
-            products = get_filtered_products()
-            staff_list = get_staff_list()
+
+            elif form_type == 'add_arrival':
+                supplier_id = request.POST.get('supplier_id')
+                product_id = request.POST.get('product_id')
+                quantity = request.POST.get('quantity')
+                price = request.POST.get('purchase_price')
+                if not all([supplier_id, product_id, quantity, price]):
+                    error = "Заповніть усі поля надходження."
+                else:
+                    total_amount = float(quantity) * float(price)
+                    cursor.execute("""
+                        SELECT 1 FROM store_supplier
+                        WHERE store_id = %s AND supplier_id = %s
+                    """, [store_id, supplier_id])
+                    if not cursor.fetchone():
+                        error = "Цей постачальник не прив'язаний до вашого магазину."
+                    else:
+                        cursor.execute("""
+                            SELECT 1 FROM product
+                            WHERE id = %s AND supplier_id = %s
+                        """, [product_id, supplier_id])
+                        if not cursor.fetchone():
+                            error = "Цей товар не належить обраному постачальнику."
+                        else:
+                            cursor.execute("""
+                                INSERT INTO arrival_of_goods (date, supplier_id, store_id, total_amount)
+                                VALUES (NOW(), %s, %s, %s) RETURNING id
+                            """, [supplier_id, store_id, total_amount])
+                            arrival_id = cursor.fetchone()[0]
+                            cursor.execute("""
+                                INSERT INTO position_of_arrival
+                                (arrival_of_goods_id, product_id, quantity, purchase_price)
+                                VALUES (%s, %s, %s, %s)
+                            """, [arrival_id, product_id, quantity, price])
+                            cursor.execute("""
+                                UPDATE product SET quantity = quantity + %s WHERE id = %s
+                            """, [quantity, product_id])
+                            success = "Надходження успішно додано!"
+
+        products = get_filtered_products()
+        staff_list = get_staff_list()
+        arrivals_list = get_arrivals_list()
 
     return render(request, 'manager_panel.html', {
         'store_info': store_info,
@@ -464,9 +518,11 @@ def manager_panel(request):
         'staff_list': staff_list,
         'categories': categories,
         'suppliers': suppliers,
+        'arrivals_list': arrivals_list,
         'success': success,
         'error': error,
     })
+
 
 def seller_panel(request):
     if not request.session.get('user_id'):

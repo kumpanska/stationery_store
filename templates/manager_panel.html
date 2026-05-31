@@ -29,64 +29,66 @@
     <div class="side_bar">
         <button class="btn" onclick="showSection('warehouse')">Склад</button>
         <button class="btn" onclick="showSection('add_product')">Додати товар</button>
+        <button class="btn" onclick="showSection('arrivals')">Надходження</button>
+        <button class="btn" onclick="showSection('arrivals_list')">Список надходжень</button>
         <button class="btn" onclick="showSection('staff_section')">Продавці</button>
     </div>
 
     <div class="content">
+
         <div id="warehouse" style="display:none;">
             <h3>Товари на складі</h3>
             {% if products %}
-                <p class="low-stock" style="font-size:13px;"></p>
+                <p class="low-stock"></p>
                 <table>
                     <thead>
-                        <tr>
-                            <th style="text-align:left;">Назва</th>
-                            <th>Категорія</th>
-                            <th>Постачальник</th>
-                            <th style="text-align:right;">Ціна продажу</th>
-                            <th style="text-align:right;">Закупівельна</th>
-                            <th style="text-align:right;">Кількість</th>
-                            <th>Штрих-код</th>
-                            <th>Дії</th>
-                        </tr>
+                    <tr>
+                        <th class="text-left">Назва</th>
+                        <th>Категорія</th>
+                        <th>Постачальник</th>
+                        <th class="text-right">Ціна продажу</th>
+                        <th class="text-right">Закупівельна</th>
+                        <th class="text-right">Кількість</th>
+                        <th>Штрих-код</th>
+                        <th>Дії</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        {% for p in products %}
-                            <tr {% if p.low_stock %}class="row-low-stock"{% endif %}>
-                                <td>
-                                    {{ p.name }}
-                                    {% if p.low_stock %}<span class="badge-low">товар закінчується</span>{% endif %}
-                                </td>
-                                <td>{{ p.category }}</td>
-                                <td>{{ p.supplier }}</td>
-                                <td style="text-align:right;">{{ p.sale_price }} грн</td>
-                                <td style="text-align:right;">{{ p.purchase_price }} грн</td>
-                                <td style="text-align:right;" {% if p.low_stock %}class="low-stock"{% endif %}>
-                                    {{ p.quantity }}
-                                </td>
-                                <td>{{ p.barcode|default:"—" }}</td>
-                                <td>
-                                    <button class="btn-primary" style="padding: 4px 10px; font-size: 13px;" onclick="openEdit(
-                                        '{{ p.id }}','{{ p.name|escapejs }}',
-                                        '{{ p.sale_price }}','{{ p.purchase_price }}',
-                                        '{{ p.quantity }}','{{ p.barcode|default:'' }}',
-                                        '{{ p.category|escapejs }}','{{ p.supplier|escapejs }}'
-                                    )">Редагувати</button>
-
-                                    <form method="post" style="display:inline;"
-                                          onsubmit="return confirm('Видалити товар «{{ p.name }}»?')">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="form_type" value="delete_product">
-                                        <input type="hidden" name="product_id" value="{{ p.id }}">
-                                        <button type="submit" class="btn-danger">🗑 Видалити</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                    {% for p in products %}
+                        <tr {% if p.low_stock %}class="row-low-stock"{% endif %}>
+                            <td>
+                                {{ p.name }}
+                                {% if p.low_stock %}<span class="badge-low">товар закінчується</span>{% endif %}
+                            </td>
+                            <td>{{ p.category }}</td>
+                            <td>{{ p.supplier }}</td>
+                            <td class="text-right">{{ p.sale_price }} грн</td>
+                            <td class="text-right">{{ p.purchase_price }} грн</td>
+                            <td class="text-right {% if p.low_stock %}low-stock{% endif %}">{{ p.quantity }}</td>
+                            <td>{{ p.barcode|default:"—" }}</td>
+                            <td>
+                                <button class="btn-primary btn-sm"
+                                        onclick="openEdit(
+                                                '{{ p.id }}','{{ p.name|escapejs }}',
+                                                '{{ p.sale_price }}','{{ p.purchase_price }}',
+                                                '{{ p.quantity }}','{{ p.barcode|default:'' }}',
+                                                '{{ p.category|escapejs }}','{{ p.supplier|escapejs }}'
+                                                )">Редагувати
+                                </button>
+                                <form method="post" class="form-inline"
+                                      onsubmit="return confirm('Видалити товар «{{ p.name }}»?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="delete_product">
+                                    <input type="hidden" name="product_id" value="{{ p.id }}">
+                                    <button type="submit" class="btn-danger">🗑 Видалити</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p style="color:gray;">Товарів немає.</p>
+                <p class="text-gray">Товарів немає.</p>
             {% endif %}
         </div>
 
@@ -105,7 +107,7 @@
                     <label>Кількість *</label>
                     <input type="number" name="quantity" min="0" required>
                     <label>Штрих-код</label>
-                    <input type="text" name="barcode">
+                    <input type="text" name="barcode" placeholder="482000000049" required>
                     <label>Категорія *</label>
                     <select name="category_id" required>
                         <option value="">оберіть</option>
@@ -120,7 +122,6 @@
                             <option value="{{ s.id }}">{{ s.name }}</option>
                         {% endfor %}
                     </select>
-
                     <label></label>
                     <button type="submit" class="btn-primary">Додати товар</button>
                 </div>
@@ -160,55 +161,117 @@
                         <label></label>
                         <div>
                             <button type="submit" class="btn-primary">Зберегти</button>
-                            <button type="button" class="btn-secondary" onclick="closeEdit()" style="margin-left:10px;">
-                                Скасувати
-                            </button>
+                            <button type="button" class="btn-secondary ml-10" onclick="closeEdit()">Скасувати</button>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div id="staff_section" style="display:none;">
-            <h3>Продавці магазину: "{{ store_info.0 }}"</h3>
-            {% if staff_list %}
-                <table style="max-width:580px;">
+        <div id="arrivals" style="display:none;">
+            <h3>Додати надходження товару</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="add_arrival">
+                <div class="form-grid">
+                    <label>Постачальник *</label>
+                    <select name="supplier_id" id="arrival_supplier" required onchange="filterProductsBySupplier()">
+                        <option value="">оберіть</option>
+                        {% for s in suppliers %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <label>Товар *</label>
+                    <select name="product_id" id="arrival_product" required>
+                        <option value="">спочатку оберіть постачальника</option>
+                        {% for p in products %}
+                            <option value="{{ p.id }}" data-supplier-name="{{ p.supplier|escapejs }}">
+                                {{ p.name }} (залишок: {{ p.quantity }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <label>Кількість *</label>
+                    <input type="number" name="quantity" min="1" required>
+                    <label>Закупівельна ціна *</label>
+                    <input type="number" name="purchase_price" step="0.01" min="0" required>
+                    <label></label>
+                    <button type="submit" class="btn-primary">Додати надходження</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="arrivals_list" style="display:none;">
+            <h3>Список надходжень</h3>
+            {% if arrivals_list %}
+                <table>
                     <thead>
-                        <tr>
-                            <th style="text-align:left;">ПІБ</th>
-                            <th>Посада</th>
-                            <th>Дія</th>
-                        </tr>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Постачальник</th>
+                        <th>Товар</th>
+                        <th class="text-right">Кількість</th>
+                        <th class="text-right">Закупівельна ціна</th>
+                        <th class="text-right">Сума</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        {% for s in staff_list %}
-                            <tr>
-                                <td>{{ s.full_name }}</td>
-                                <td style="text-align:center;">{{ s.position }}</td>
-                                <td style="text-align:center;">
-                                    <form method="post" style="display:inline;"
-                                          onsubmit="return confirm('Видалити працівника «{{ s.full_name }}»?')">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="form_type" value="delete_staff">
-                                        <input type="hidden" name="staff_id" value="{{ s.id }}">
-                                        <button type="submit" class="btn-danger">🗑 Видалити</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        {% endfor %}
+                    {% for a in arrivals_list %}
+                        <tr>
+                            <td>{{ a.date }}</td>
+                            <td>{{ a.supplier }}</td>
+                            <td>{{ a.product }}</td>
+                            <td class="text-right">{{ a.quantity }}</td>
+                            <td class="text-right">{{ a.purchase_price }} грн</td>
+                            <td class="text-right">{{ a.total_amount }} грн</td>
+                        </tr>
+                    {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p style="color:gray;">Продавців немає.</p>
+                <p class="text-gray">Надходжень ще немає.</p>
             {% endif %}
         </div>
-    </div>
 
+        <div id="staff_section" style="display:none;">
+            <h3>Продавці магазину: "{{ store_info.0 }}"</h3>
+            {% if staff_list %}
+                <table class="table-narrow">
+                    <thead>
+                    <tr>
+                        <th class="text-left">ПІБ</th>
+                        <th>Посада</th>
+                        <th>Дія</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for s in staff_list %}
+                        <tr>
+                            <td>{{ s.full_name }}</td>
+                            <td class="text-center">{{ s.position }}</td>
+                            <td class="text-center">
+                                <form method="post" class="form-inline"
+                                      onsubmit="return confirm('Видалити працівника «{{ s.full_name }}»?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="delete_staff">
+                                    <input type="hidden" name="staff_id" value="{{ s.id }}">
+                                    <button type="submit" class="btn-danger">🗑 Видалити</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-gray">Продавців немає.</p>
+            {% endif %}
+        </div>
+
+    </div>
 </div>
 
 <script>
     function showSection(id) {
-        document.querySelectorAll('.content > div').forEach(d => d.style.display = 'none');
+        document.querySelectorAll('.content > div:not(#edit_modal)').forEach(d => d.style.display = 'none');
         document.getElementById(id).style.display = 'block';
     }
     function openEdit(id, name, sale, purchase, qty, barcode, category, supplier) {
@@ -225,18 +288,45 @@
     function setSelectByText(selectId, text) {
         const sel = document.getElementById(selectId);
         for (let i = 0; i < sel.options.length; i++) {
-            if (sel.options[i].text === text) { sel.selectedIndex = i; break; }
+            if (sel.options[i].text === text) {
+                sel.selectedIndex = i;
+                break;
+            }
         }
     }
     function closeEdit() {
         document.getElementById('edit_modal').style.display = 'none';
     }
+    function filterProductsBySupplier() {
+        const supplierSelect = document.getElementById('arrival_supplier');
+        const supplierName = supplierSelect.options[supplierSelect.selectedIndex].text;
+        const productSelect = document.getElementById('arrival_product');
+        const options = productSelect.querySelectorAll('option');
+        options.forEach(opt => {
+            if (!opt.value) {
+                opt.style.display = '';
+                return;
+            }
+            opt.style.display = (opt.dataset.supplierName === supplierName) ? '' : 'none';
+        });
+        productSelect.value = '';
+    }
     {% if success %}
-        {% if 'Товар' in success %}showSection('warehouse');
-        {% elif 'Працівника' in success %}showSection('staff_section');
+        {% if 'Надходження' in success %}
+            showSection('arrivals_list');
+        {% elif 'Товар' in success %}
+            showSection('warehouse');
+        {% elif 'Працівника' in success %}
+            showSection('staff_section');
         {% endif %}
     {% endif %}
-    {% if error %}showSection('warehouse');{% endif %}
+    {% if error %}
+        {% if 'постачальник' in error or 'товар' in error %}
+            showSection('arrivals');
+        {% else %}
+            showSection('warehouse');
+        {% endif %}
+    {% endif %}
 </script>
 </body>
 </html>
