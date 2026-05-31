@@ -10,13 +10,6 @@
 <body>
 <h1>Панель директора</h1>
 
-{% if success %}
-    <div class="alert-success">{{ success }}</div>
-{% endif %}
-{% if error %}
-    <div class="alert-error">{{ error }}</div>
-{% endif %}
-
 <div class="main-wrapper">
 
     <div class="side_bar">
@@ -28,6 +21,12 @@
     </div>
 
     <div class="content">
+        {% if success %}
+            <div class="alert-success">{{ success }}</div>
+        {% endif %}
+        {% if error %}
+            <div class="alert-error">{{ error }}</div>
+        {% endif %}
         <div id="sales_stats" style="display:none;">
             <h3>Статистика продажів: "{{ store_info.0 }}"</h3>
             <form method="post">
@@ -38,9 +37,10 @@
                 <input type="date" name="end_date">
                 <label style="margin-left:16px;">Продавець:</label>
                 <select name="seller_id" style="width: auto;">
-                    <option value=""> Всі </option>
+                    <option value=""> Всі</option>
                     {% for s in sellers %}
-                        <option value="{{ s.id }}" {% if selected_seller_id == s.id|stringformat:"s" %}selected{% endif %}>
+                        <option value="{{ s.id }}"
+                                {% if selected_seller_id == s.id|stringformat:"s" %}selected{% endif %}>
                             {{ s.full_name }}
                         </option>
                     {% endfor %}
@@ -58,20 +58,20 @@
                 <h4>Продажі по продавцях за період</h4>
                 <table style="max-width:600px;">
                     <thead>
-                        <tr>
-                            <th style="text-align:left;">Продавець</th>
-                            <th style="text-align:right;">Чеків</th>
-                            <th style="text-align:right;">Сума (грн)</th>
-                        </tr>
+                    <tr>
+                        <th style="text-align:left;">Продавець</th>
+                        <th style="text-align:right;">Чеків</th>
+                        <th style="text-align:right;">Сума (грн)</th>
+                    </tr>
                     </thead>
                     <tbody>
-                        {% for s in seller_stats %}
-                            <tr>
-                                <td>{{ s.name }}</td>
-                                <td style="text-align:right;">{{ s.receipts }}</td>
-                                <td style="text-align:right;">{{ s.total }}</td>
-                            </tr>
-                        {% endfor %}
+                    {% for s in seller_stats %}
+                        <tr>
+                            <td>{{ s.name }}</td>
+                            <td style="text-align:right;">{{ s.receipts }}</td>
+                            <td style="text-align:right;">{{ s.total }}</td>
+                        </tr>
+                    {% endfor %}
                     </tbody>
                 </table>
             {% endif %}
@@ -86,20 +86,22 @@
             <h4>Топ 5 найпопулярніших товарів:</h4>
             <table style="max-width:480px;">
                 <thead>
-                    <tr>
-                        <th style="text-align:left;">Товар</th>
-                        <th style="text-align:right;">Продано (шт.)</th>
-                    </tr>
+                <tr>
+                    <th style="text-align:left;">Товар</th>
+                    <th style="text-align:right;">Продано (шт.)</th>
+                </tr>
                 </thead>
                 <tbody>
-                    {% for t in top_products %}
-                        <tr>
-                            <td>{{ t.name }}</td>
-                            <td style="text-align:right;">{{ t.sold }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="2" style="color:gray;">Немає даних</td></tr>
-                    {% endfor %}
+                {% for t in top_products %}
+                    <tr>
+                        <td>{{ t.name }}</td>
+                        <td style="text-align:right;">{{ t.sold }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="2" style="color:gray;">Немає даних</td>
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -126,7 +128,7 @@
             </ul>
         </div>
 
-       <div id="suppliers" style="display:none;">
+        <div id="suppliers" style="display:none;">
             <h3>Постачальники</h3>
             <form method="post" class="supplier-form">
                 {% csrf_token %}
@@ -134,7 +136,7 @@
                 <div class="form-group">
                     <label for="existing_supplier_id">Оберіть постачальника:</label>
                     <select name="existing_supplier_id" id="existing_supplier_id" required>
-                        <option value=""> оберіть </option>
+                        <option value=""> оберіть</option>
                         {% for sup in all_suppliers %}
                             <option value="{{ sup.id }}">{{ sup.company_name }}</option>
                         {% endfor %}
@@ -146,24 +148,26 @@
             <h4>Список постачальників магазину:</h4>
             <table style="max-width:720px;">
                 <thead>
-                    <tr>
-                        <th style="text-align:left;">Компанія</th>
-                        <th style="text-align:left;">Контакт</th>
-                        <th>Телефон</th>
-                        <th>Email</th>
-                    </tr>
+                <tr>
+                    <th style="text-align:left;">Компанія</th>
+                    <th style="text-align:left;">Контакт</th>
+                    <th>Телефон</th>
+                    <th>Email</th>
+                </tr>
                 </thead>
                 <tbody>
-                    {% for sup in suppliers %}
-                        <tr>
-                            <td>{{ sup.company_name }}</td>
-                            <td>{{ sup.contact_full_name }}</td>
-                            <td>{{ sup.phone }}</td>
-                            <td>{{ sup.email }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="4" style="color:gray;">Немає постачальників</td></tr>
-                    {% endfor %}
+                {% for sup in suppliers %}
+                    <tr>
+                        <td>{{ sup.company_name }}</td>
+                        <td>{{ sup.contact_full_name }}</td>
+                        <td>{{ sup.phone }}</td>
+                        <td>{{ sup.email }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" style="color:gray;">Немає постачальників</td>
+                    </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -177,7 +181,8 @@
         });
         document.getElementById(sectionId).style.display = 'block';
     }
-    window.onload = function() {
+
+    window.onload = function () {
         {% if form_submitted %}
             showSection('sales_stats');
         {% elif success or error %}
