@@ -60,7 +60,27 @@ h1 {
     background-color: #223125;
     color: #E6E7EB;
 }
+.home-link {
+    display: block;
+    width: 180px;
+    margin: auto auto 0;
+    padding: 12px;
+    font-size: 14px;
+    color: #729969;
+    text-align: center;
+    text-decoration: none;
+    font-family: Bahnschrift, sans-serif;
+    box-sizing: border-box;
+}
 
+.home-link:hover {
+    color: #223125;
+    text-decoration: underline;
+}
+.side_bar {
+    display: flex;
+    flex-direction: column;
+}
 .content {
     padding: 40px;
     color: #223125;

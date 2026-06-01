@@ -16,7 +16,13 @@ h1 {
     font-size: 26px;
     z-index: 10;
 }
-
+.store-info {
+    background-color: #223125;
+    color: #F6F6F6;
+    margin: 0;
+    padding: 0 30px 20px 30px;
+    font-size: 14px;
+}
 .main-wrapper {
     display: flex;
     flex: 1;
@@ -55,7 +61,27 @@ h1 {
     background-color: #223125;
     color: #E6E7EB;
 }
+.home-link {
+    display: block;
+    width: 180px;
+    margin: auto auto 0;
+    padding: 12px;
+    font-size: 14px;
+    color: #729969;
+    text-align: center;
+    text-decoration: none;
+    font-family: Bahnschrift, sans-serif;
+    box-sizing: border-box;
+}
 
+.home-link:hover {
+    color: #223125;
+    text-decoration: underline;
+}
+.side_bar {
+    display: flex;
+    flex-direction: column;
+}
 .content {
     margin-left: 220px;
     padding: 40px;
