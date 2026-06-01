@@ -326,6 +326,35 @@ def director_panel(request):
                 else:
                     error = 'Оберіть постачальника зі списку.'
 
+            elif form_type == 'remove_supplier':
+                supplier_id = request.POST.get('supplier_id')
+                cursor.execute(
+                    "SELECT company_name FROM supplier WHERE id = %s", [supplier_id]
+                )
+                sup = cursor.fetchone()
+                if sup:
+                    cursor.execute("""
+                                   DELETE
+                                   FROM store_supplier
+                                   WHERE store_id = %s
+                                     AND supplier_id = %s
+                                   """, [store_id, supplier_id])
+                    success = f'Постачальника "{sup[0]}" відв\'язано від магазину!'
+                    cursor.execute("""
+                                   SELECT sup.id, sup.company_name, sup.contact_full_name, sup.phone, sup.email
+                                   FROM supplier sup
+                                            JOIN store_supplier ss ON ss.supplier_id = sup.id
+                                   WHERE ss.store_id = %s
+                                   ORDER BY sup.company_name
+                                   """, [store_id])
+                    suppliers = [
+                        {'id': r[0], 'company_name': r[1], 'contact_full_name': r[2],
+                         'phone': r[3], 'email': r[4]}
+                        for r in cursor.fetchall()
+                    ]
+                else:
+                    error = 'Постачальника не знайдено.'
+
     return render(request, 'director_panel.html', {
         'store_id': store_id,
         'store_info': store_info,

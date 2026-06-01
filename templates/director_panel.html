@@ -22,7 +22,7 @@
         <button class="btn" onclick="showSection('sales_stats')">Статистика продажів</button>
         <button class="btn" onclick="showSection('store_report')">Звіт по магазину</button>
         <button class="btn" onclick="showSection('sellers')">Продавці</button>
-        <button class="btn" onclick="showSection('managers')">Менеджери</button>
+        <button class="btn" onclick="showSection('managers')">Менеджер</button>
         <button class="btn" onclick="showSection('suppliers')">Постачальники</button>
         <a href="/" class="home-link">На головну сторінку</a>
     </div>
@@ -161,6 +161,7 @@
                     <th class="text-left">Контакт</th>
                     <th>Телефон</th>
                     <th>Email</th>
+                    <th>Дії</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -170,16 +171,24 @@
                         <td>{{ sup.contact_full_name }}</td>
                         <td>{{ sup.phone }}</td>
                         <td>{{ sup.email }}</td>
+                        <td>
+                            <form method="post" class="form-inline"
+                                  onsubmit="return confirm('Відв\'язати постачальника «{{ sup.company_name }}» від магазину?')">
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="remove_supplier">
+                                <input type="hidden" name="supplier_id" value="{{ sup.id }}">
+                                <button type="submit" class="btn-danger">Видалити</button>
+                            </form>
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4" class="text-gray">Немає постачальників</td>
+                        <td colspan="5" class="text-gray">Немає постачальників</td>
                     </tr>
                 {% endfor %}
                 </tbody>
             </table>
         </div>
-
     </div>
 </div>
 
