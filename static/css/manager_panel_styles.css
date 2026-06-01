@@ -175,6 +175,16 @@ tbody tr:hover {
     font-size: 12px;
     margin-left: 6px;
 }
+.badge-out {
+    display: inline-block;
+    background-color: #e74c3c;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-left: 6px;
+    font-weight: bold;
+}
 
 .row-low-stock {
     background: #fff5f5;
@@ -219,15 +229,24 @@ form select:focus {
     padding-right: 8px;
 }
 
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: Bahnschrift, sans-serif;
+}
+
 .btn-primary {
-    padding: 8px 18px;
+    padding: 5px 12px;
     background-color: #729969;
     color: #F6F6F6;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
     font-family: Bahnschrift, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .btn-primary:hover {
@@ -238,7 +257,7 @@ form select:focus {
     background: #e74c3c;
     color: white;
     border: none;
-    padding: 4px 10px;
+    padding: 5px 12px;
     cursor: pointer;
     border-radius: 4px;
     font-family: Bahnschrift, sans-serif;
@@ -253,17 +272,16 @@ form select:focus {
     background: #aaa;
     color: white;
     border: none;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 4px;
     cursor: pointer;
     font-family: Bahnschrift, sans-serif;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .btn-secondary:hover {
     background: #888;
 }
-
 .modal-overlay {
     display: none;
     position: fixed;

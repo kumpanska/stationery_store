@@ -460,7 +460,7 @@ def manager_panel(request):
                                     JOIN position_of_arrival pa ON pa.arrival_of_goods_id = ag.id
                                     JOIN product p ON pa.product_id = p.id
                            WHERE ag.store_id = %s
-                           ORDER BY ag.date DESC
+                           ORDER BY ag.date DESC, ag.id DESC
                            """, [store_id])
             return [
                 {
@@ -581,9 +581,10 @@ def manager_panel(request):
                                                    """, [arrival_id, product_id, quantity, price])
                                     cursor.execute("""
                                                    UPDATE product
-                                                   SET quantity = quantity + %s
+                                                   SET quantity       = quantity + %s,
+                                                       purchase_price = %s
                                                    WHERE id = %s
-                                                   """, [quantity, product_id])
+                                                   """, [quantity, price, product_id])
                                 success = "Надходження успішно додано!"
                             except Exception as e:
                                 error = f"Помилка бази даних при проведені надходження: {e}"
