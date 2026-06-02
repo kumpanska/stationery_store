@@ -372,7 +372,6 @@ def director_panel(request):
         'all_suppliers': all_suppliers,
     })
 
-
 def manager_panel(request):
     user_auth_id = request.session.get('user_id')
     if not user_auth_id:
@@ -415,18 +414,18 @@ def manager_panel(request):
                            SELECT p.id,
                                   p.product_name,
                                   p.sale_price,
-                                  p.purchase_price,
-                                  p.quantity,
+                                  sp.local_purchase_price AS purchase_price,
+                                  sp.quantity,
                                   p.barcode,
                                   pc.category_name,
                                   sup.company_name
                            FROM product p
                                     JOIN products_category pc ON p.category_id = pc.id
                                     JOIN supplier sup ON p.supplier_id = sup.id
-                                    JOIN store_supplier ss ON ss.supplier_id = sup.id
-                           WHERE ss.store_id = %s
+                                    JOIN store_supplier ss ON ss.supplier_id = sup.id AND ss.store_id = %s
+                                    JOIN store_product sp ON sp.product_id = p.id AND sp.store_id = %s
                            ORDER BY pc.category_name, p.product_name
-                           """, [store_id])
+                           """, [store_id, store_id])
             return [
                 {
                     'id': r[0], 'name': r[1], 'sale_price': float(r[2]),
@@ -485,46 +484,47 @@ def manager_panel(request):
                 category_id = request.POST.get('category_id')
                 supplier_id = request.POST.get('supplier_id')
                 if name and sale_price and purchase_price and quantity and category_id and supplier_id:
-                    cursor.execute("""
-                                   INSERT INTO product
-                                   (product_name, sale_price, purchase_price, quantity, barcode, category_id,
-                                    supplier_id)
-                                   VALUES (%s, %s, %s, %s, %s, %s, %s)
-                                   """, [name, sale_price, purchase_price, quantity, barcode, category_id, supplier_id])
-                    success = f'Товар "{name}" успішно додано!'
+                    try:
+                        with transaction.atomic():
+                            cursor.execute("""
+                                           INSERT INTO product (product_name, sale_price, barcode, category_id, supplier_id)
+                                           VALUES (%s, %s, %s, %s, %s) RETURNING id
+                                           """, [name, sale_price, barcode, category_id, supplier_id])
+                            new_product_id = cursor.fetchone()[0]
+                            cursor.execute("""
+                                           INSERT INTO store_product (store_id, product_id, quantity, local_purchase_price)
+                                           VALUES (%s, %s, %s, %s)
+                                           """, [store_id, new_product_id, quantity, purchase_price])
+                        success = f'Товар "{name}" успішно додано та прив\'язано до магазину!'
+                    except Exception as e:
+                        error = f"Помилка бази даних: {e}"
                 else:
                     error = "Заповніть усі обов'язкові поля товару."
-
             elif form_type == 'edit_product':
                 product_id = request.POST.get('product_id')
                 name = request.POST.get('product_name', '').strip()
-                sale_price = request.POST.get('sale_price')
                 purchase_price = request.POST.get('purchase_price')
                 quantity = request.POST.get('quantity')
-                barcode = request.POST.get('barcode', '').strip() or None
-                category_id = request.POST.get('category_id')
-                supplier_id = request.POST.get('supplier_id')
-                cursor.execute("""
-                               UPDATE product
-                               SET product_name=%s,
-                                   sale_price=%s,
-                                   purchase_price=%s,
-                                   quantity=%s,
-                                   barcode=%s,
-                                   category_id=%s,
-                                   supplier_id=%s
-                               WHERE id = %s
-                               """, [name, sale_price, purchase_price, quantity,
-                                     barcode, category_id, supplier_id, product_id])
-                success = f'Товар "{name}" оновлено!'
+                try:
+                    with transaction.atomic():
+                        cursor.execute("""
+                                       UPDATE store_product
+                                       SET quantity=%s,
+                                           local_purchase_price=%s
+                                       WHERE store_id = %s
+                                         AND product_id = %s
+                                       """, [quantity, purchase_price, store_id, product_id])
+                    success = f'Товар "{name}" оновлено!'
+                except Exception as e:
+                    error = f"Помилка оновлення: {e}"
 
             elif form_type == 'delete_product':
                 product_id = request.POST.get('product_id')
                 cursor.execute("SELECT product_name FROM product WHERE id=%s", [product_id])
                 p = cursor.fetchone()
                 if p:
-                    cursor.execute("DELETE FROM product WHERE id=%s", [product_id])
-                    success = f'Товар "{p[0]}" видалено!'
+                    cursor.execute("DELETE FROM store_product WHERE product_id=%s AND store_id=%s", [product_id, store_id])
+                    success = f'Товар "{p[0]}" прибрано з асортименту магазину!'
                 else:
                     error = 'Товар не знайдено.'
 
@@ -549,21 +549,11 @@ def manager_panel(request):
                     error = "Заповніть усі поля надходження."
                 else:
                     total_amount = float(quantity) * float(price)
-                    cursor.execute("""
-                                   SELECT 1
-                                   FROM store_supplier
-                                   WHERE store_id = %s
-                                     AND supplier_id = %s
-                                   """, [store_id, supplier_id])
+                    cursor.execute("SELECT 1 FROM store_supplier WHERE store_id = %s AND supplier_id = %s", [store_id, supplier_id])
                     if not cursor.fetchone():
                         error = "Цей постачальник не прив'язаний до вашого магазину."
                     else:
-                        cursor.execute("""
-                                       SELECT 1
-                                       FROM product
-                                       WHERE id = %s
-                                         AND supplier_id = %s
-                                       """, [product_id, supplier_id])
+                        cursor.execute("SELECT 1 FROM product WHERE id = %s AND supplier_id = %s", [product_id, supplier_id])
                         if not cursor.fetchone():
                             error = "Цей товар не належить обраному постачальнику."
                         else:
@@ -580,11 +570,11 @@ def manager_panel(request):
                                                    VALUES (%s, %s, %s, %s)
                                                    """, [arrival_id, product_id, quantity, price])
                                     cursor.execute("""
-                                                   UPDATE product
-                                                   SET quantity       = quantity + %s,
-                                                       purchase_price = %s
-                                                   WHERE id = %s
-                                                   """, [quantity, price, product_id])
+                                                   UPDATE store_product
+                                                   SET quantity = quantity + %s,
+                                                       local_purchase_price = %s
+                                                   WHERE store_id = %s AND product_id = %s
+                                                   """, [quantity, price, store_id, product_id])
                                 success = "Надходження успішно додано!"
                             except Exception as e:
                                 error = f"Помилка бази даних при проведені надходження: {e}"
@@ -635,13 +625,12 @@ def seller_panel(request):
 
         def get_products():
             cursor.execute("""
-                           SELECT p.id, p.product_name, p.sale_price, p.quantity, pc.category_name
+                           SELECT p.id, p.product_name, p.sale_price, sp.quantity, pc.category_name
                            FROM product p
                                     JOIN products_category pc ON p.category_id = pc.id
-                                    JOIN supplier sup ON p.supplier_id = sup.id
-                                    JOIN store_supplier ss ON ss.supplier_id = sup.id
-                           WHERE ss.store_id = %s
-                             AND p.quantity > 0
+                                    JOIN store_product sp ON sp.product_id = p.id
+                           WHERE sp.store_id = %s
+                             AND sp.quantity > 0
                            ORDER BY pc.category_name, p.product_name
                            """, [store_id])
             return [
@@ -700,18 +689,19 @@ def seller_panel(request):
                     total_amount = 0.0
                     for product_id, qty in items:
                         cursor.execute("""
-                                       SELECT product_name, quantity, sale_price
-                                       FROM product
-                                       WHERE id = %s
-                                       """, [product_id])
+                                       SELECT p.product_name, sp.quantity, p.sale_price
+                                       FROM product p
+                                       JOIN store_product sp ON sp.product_id = p.id
+                                       WHERE p.id = %s AND sp.store_id = %s
+                                       """, [product_id, store_id])
                         prod = cursor.fetchone()
                         if not prod:
-                            stock_error = f"Товар не знайдено."
+                            stock_error = "Товар не знайдено на складі магазину."
                             break
                         product_name, stock_qty, sale_price = prod
                         sale_price = float(sale_price)
                         if stock_qty < qty:
-                            stock_error = f'Недостатньо товару "{product_name}": є {stock_qty}, потрібно {qty}.'
+                            stock_error = f'Недостатньо товару "{product_name}": у вашому магазині є {stock_qty}, потрібно {qty}.'
                             break
                         total_amount += sale_price * qty
                         validated_items.append((product_id, qty, sale_price))
@@ -730,11 +720,17 @@ def seller_panel(request):
                                                    INSERT INTO sale_position (receipt_id, product_id, quantity, sale_price)
                                                    VALUES (%s, %s, %s, %s)
                                                    """, [receipt_id, product_id, qty, price])
+
                                     cursor.execute("""
-                                                   UPDATE product
-                                                   SET quantity = quantity - %s
-                                                   WHERE id = %s
-                                                   """, [qty, product_id])
+                                                   UPDATE store_product
+                                                   SET quantity = quantity - %(qty)s
+                                                   WHERE store_id = %(store_id)s
+                                                     AND product_id = %(product_id)s
+                                                   """, {
+                                                       'qty': qty,
+                                                       'store_id': store_id,
+                                                       'product_id': product_id
+                                                   })
                             success = f"Продаж на суму {total_amount:,.2f} грн успішно оформлено!"
                         except Exception as e:
                             error = f"Помилка при збереженні чека у базі даних: {e}"
